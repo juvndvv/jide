@@ -1,0 +1,118 @@
+[
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "system",
+      "subtype": "init",
+      "cwd": "/tmp/fake",
+      "session_id": "fake-session-tool-use",
+      "model": "claude-haiku-4-5-20251001",
+      "tools": ["Bash", "Read", "Edit"],
+      "permissionMode": "default"
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 10,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_test2",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-4-5-20251001",
+        "content": [
+          {
+            "type": "thinking",
+            "thinking": "I'll run pwd to find the working directory."
+          }
+        ],
+        "stop_reason": null
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 10,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_test2",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-4-5-20251001",
+        "content": [
+          {
+            "type": "tool_use",
+            "id": "toolu_test1",
+            "name": "Bash",
+            "input": {
+              "command": "pwd",
+              "description": "Get current working directory"
+            }
+          }
+        ],
+        "stop_reason": null
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 15,
+    "event": {
+      "type": "user",
+      "message": {
+        "role": "user",
+        "content": [
+          {
+            "tool_use_id": "toolu_test1",
+            "type": "tool_result",
+            "content": "/tmp/fake",
+            "is_error": false
+          }
+        ]
+      },
+      "tool_use_result": {
+        "stdout": "/tmp/fake",
+        "stderr": "",
+        "interrupted": false,
+        "isImage": false,
+        "noOutputExpected": false
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 10,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_test2",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-4-5-20251001",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are in /tmp/fake."
+          }
+        ],
+        "stop_reason": null
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 10,
+    "event": {
+      "type": "result",
+      "subtype": "success",
+      "is_error": false,
+      "total_cost_usd": 0,
+      "num_turns": 1,
+      "stop_reason": "end_turn",
+      "result": "You are in /tmp/fake."
+    }
+  }
+]
