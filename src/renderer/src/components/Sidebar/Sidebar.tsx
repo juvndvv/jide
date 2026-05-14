@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import type { Project } from '@shared/project';
 import { useTheme } from '../../theme/useTheme';
 import { SidebarSection } from './SidebarSection';
@@ -13,6 +13,8 @@ export function Sidebar({
   onSelectWorktree,
   onAddProject,
   onNewWorktree,
+  tweaksOpen,
+  onToggleTweaks,
 }: {
   projects: Project[];
   activeWorktreeId: string | null;
@@ -20,11 +22,12 @@ export function Sidebar({
   onSelectWorktree: (id: string) => void;
   onAddProject: () => void;
   onNewWorktree: () => void;
+  tweaksOpen: boolean;
+  onToggleTweaks: () => void;
 }) {
   const { theme, accent, density, sidebarSide } = useTheme();
   const borderSide = sidebarSide === 'left' ? 'borderRight' : 'borderLeft';
   const settingsRef = useRef<HTMLButtonElement>(null);
-  const [tweaksOpen, setTweaksOpen] = useState(false);
 
   return (
     <aside
@@ -84,7 +87,7 @@ export function Sidebar({
             kbd="⌘,"
             data-testid="sidebar-settings"
             anchorRef={settingsRef}
-            onClick={() => setTweaksOpen((v) => !v)}
+            onClick={onToggleTweaks}
           >
             Ajustes
           </SidebarRow>
@@ -94,7 +97,7 @@ export function Sidebar({
         <TweaksPanel
           anchorRef={settingsRef}
           side={sidebarSide}
-          onClose={() => setTweaksOpen(false)}
+          onClose={onToggleTweaks}
         />
       )}
     </aside>

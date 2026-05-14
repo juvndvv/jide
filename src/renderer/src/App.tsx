@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
@@ -9,6 +9,7 @@ import { useProjects } from './shortcuts/useProjects';
 import { useAllWorktrees } from './shortcuts/useAllWorktrees';
 import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
+import { useGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
 
 export function App(): JSX.Element {
   const { theme, sidebarSide } = useTheme();
@@ -17,6 +18,7 @@ export function App(): JSX.Element {
   const { tabs, activeWorktreeId, open, close } = useTabs({ projects, worktreesById });
   const [dialogOpenFor, setDialogOpenFor] = useState<string | null>(null);
   const [maxSessions, setMaxSessions] = useState<number>(4);
+  const [tweaksOpen, setTweaksOpen] = useState<boolean>(false);
 
   useEffect(() => {
     window.jide.settings
@@ -30,6 +32,23 @@ export function App(): JSX.Element {
   const activeTab = tabs.find((t) => t.worktreeId === activeWorktreeId) ?? null;
   const activeProject = activeTab ? (projects.find((p) => p.id === activeTab.projectId) ?? null) : null;
   const activeWt = activeWorktreeId ? (worktreesById.get(activeWorktreeId) ?? null) : null;
+
+  const handlers = useMemo(
+    () => ({
+      onToggleTweaks: () => setTweaksOpen((v) => !v),
+      onNewWorktree: () => {
+        if (activeProject) setDialogOpenFor(activeProject.id);
+        else if (projects[0]) setDialogOpenFor(projects[0].id);
+      },
+      onEscape: () => {
+        if (dialogOpenFor) setDialogOpenFor(null);
+        else if (tweaksOpen) setTweaksOpen(false);
+      },
+    }),
+    [activeProject, projects, dialogOpenFor, tweaksOpen],
+  );
+
+  useGlobalShortcuts(handlers);
 
   return (
     <div
@@ -67,6 +86,8 @@ export function App(): JSX.Element {
             if (activeProject) setDialogOpenFor(activeProject.id);
             else if (projects[0]) setDialogOpenFor(projects[0].id);
           }}
+          tweaksOpen={tweaksOpen}
+          onToggleTweaks={() => setTweaksOpen((v) => !v)}
         />
         <main
           style={{
