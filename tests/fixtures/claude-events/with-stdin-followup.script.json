@@ -1,0 +1,74 @@
+[
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "system",
+      "subtype": "init",
+      "session_id": "fake-1",
+      "cwd": "/tmp/fake",
+      "model": "haiku"
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_fake1",
+        "content": [{ "type": "text", "text": "First turn response." }]
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "result",
+      "subtype": "success",
+      "is_error": false,
+      "api_error_status": null,
+      "total_cost_usd": 0.0001,
+      "num_turns": 1,
+      "stop_reason": "end_turn"
+    }
+  },
+  { "kind": "echo-stdin", "expect": "user" },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "system",
+      "subtype": "init",
+      "session_id": "fake-1",
+      "cwd": "/tmp/fake",
+      "model": "haiku"
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_fake2",
+        "content": [{ "type": "text", "text": "Second turn response." }]
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "result",
+      "subtype": "success",
+      "is_error": false,
+      "api_error_status": null,
+      "total_cost_usd": 0.0001,
+      "num_turns": 1,
+      "stop_reason": "end_turn"
+    }
+  },
+  { "kind": "exit", "code": 0 }
+]
