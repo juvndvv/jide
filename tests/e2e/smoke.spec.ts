@@ -8,9 +8,9 @@ test('app boots and opens a window titled "jide"', async () => {
   await app.close();
 });
 
-test('renderer shows jide wordmark', async () => {
+test('renderer shows the sidebar shell', async () => {
   const app = await launchJide();
   const window = await app.firstWindow();
-  await expect(window.getByTestId('wordmark')).toHaveText('jide');
+  await expect(window.getByTestId('sidebar')).toBeVisible();
   await app.close();
 });

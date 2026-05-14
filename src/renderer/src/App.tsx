@@ -1,60 +1,55 @@
-import { useEffect, useState } from 'react';
-import type { ThemeMode } from '@shared/settings';
+import { useState } from 'react';
+import { Sidebar } from './components/Sidebar';
+import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
+import { useProjects } from './shortcuts/useProjects';
 
 export function App() {
-  const [theme, setTheme] = useState<ThemeMode | null>(null);
-
-  useEffect(() => {
-    void window.jide.settings.get('theme').then(setTheme);
-  }, []);
-
-  // TODO(phase-5): replace this temporary theme-toggle demo with the real Tweaks panel.
-  const cycle = async () => {
-    const order: ThemeMode[] = ['auto', 'light', 'dark'];
-    const next = order[(order.indexOf(theme ?? 'auto') + 1) % order.length] ?? 'auto';
-    await window.jide.settings.set('theme', next);
-    setTheme(next);
-  };
+  const { projects, add, toggleExpanded } = useProjects();
+  const [activeWorktreeId, setActiveWorktreeId] = useState<string | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [dialogOpenFor, setDialogOpenFor] = useState<string | null>(null);
 
   return (
-    <main
-      style={{
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 16,
-      }}
-    >
-      <h1
-        data-testid="wordmark"
+    <div style={{ display: 'flex', height: '100%' }}>
+      <Sidebar
+        projects={projects}
+        activeWorktreeId={activeWorktreeId}
+        onToggleProject={toggleExpanded}
+        onSelectWorktree={(id) => {
+          setActiveWorktreeId(id);
+          // The worktree id encodes the project root prefix (id = `${repoRoot}:${worktreePath}`).
+          // For now, infer the project by matching the prefix; refined when persisted state grows.
+          const matched = projects.find((p) => id.startsWith(`${p.path}:`));
+          if (matched) setActiveProjectId(matched.id);
+        }}
+        onAddProject={() => void add()}
+        onNewWorktree={() => {
+          if (activeProjectId) setDialogOpenFor(activeProjectId);
+          else if (projects[0]) setDialogOpenFor(projects[0].id);
+        }}
+      />
+
+      <main
         style={{
-          fontFamily: '"Bowlby One SC", Anton, Impact, sans-serif',
-          fontSize: 96,
-          letterSpacing: -2,
-          color: 'var(--jide-accent)',
-          margin: 0,
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          color: '#00000040',
+          fontFamily: 'ui-monospace, monospace',
+          fontSize: 14,
         }}
       >
-        jide
-      </h1>
-      {/* TODO(phase-5): swap for real Tweaks panel; this button is only here to prove the settings IPC roundtrip works. */}
-      <button
-        type="button"
-        data-testid="theme-toggle"
-        onClick={() => void cycle()}
-        style={{
-          padding: '8px 16px',
-          fontFamily: 'inherit',
-          borderRadius: 8,
-          border: '1px solid #00000020',
-          background: '#FFFFFF',
-          cursor: 'pointer',
-        }}
-      >
-        theme: <span data-testid="theme-value">{theme ?? '…'}</span>
-      </button>
-    </main>
+        {activeWorktreeId ?? 'Selecciona un worktree'}
+      </main>
+
+      {dialogOpenFor && (
+        <NewWorktreeDialog
+          project={projects.find((p) => p.id === dialogOpenFor) ?? projects[0]!}
+          onCancel={() => setDialogOpenFor(null)}
+          onCreated={() => setDialogOpenFor(null)}
+        />
+      )}
+    </div>
   );
 }

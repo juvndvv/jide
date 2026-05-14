@@ -1,11 +1,10 @@
-import type { Project, Worktree } from '@shared/project';
+import type { Project } from '@shared/project';
 import { SidebarSection } from './SidebarSection';
 import { SidebarRow } from './SidebarRow';
-import { ProjectNode } from './ProjectNode';
+import { ProjectBranch } from './ProjectBranch';
 
 export function Sidebar({
   projects,
-  worktreesByProject,
   activeWorktreeId,
   onToggleProject,
   onSelectWorktree,
@@ -13,7 +12,6 @@ export function Sidebar({
   onNewWorktree,
 }: {
   projects: Project[];
-  worktreesByProject: Record<string, Worktree[]>;
   activeWorktreeId: string | null;
   onToggleProject: (id: string) => void;
   onSelectWorktree: (id: string) => void;
@@ -49,10 +47,9 @@ export function Sidebar({
       <div style={{ flex: 1, overflow: 'auto', padding: '4px 6px 12px' }}>
         <SidebarSection label="Proyectos">
           {projects.map((p) => (
-            <ProjectNode
+            <ProjectBranch
               key={p.id}
               project={p}
-              worktrees={worktreesByProject[p.id] ?? []}
               activeWorktreeId={activeWorktreeId}
               onToggle={() => onToggleProject(p.id)}
               onSelectWorktree={onSelectWorktree}
