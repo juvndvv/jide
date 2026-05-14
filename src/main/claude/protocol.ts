@@ -270,6 +270,8 @@ export function emptySnapshot(worktreeId: string, model: string, cwd: string): S
     status: 'idle',
     model,
     cwd,
+    title: '',
+    createdAt: Date.now(),
     messages: [],
     rateLimit: null,
     awaitingToolUseId: null,
