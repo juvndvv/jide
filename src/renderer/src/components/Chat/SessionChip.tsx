@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SessionSnapshot } from '@shared/session';
 import { useTheme } from '../../theme/useTheme';
+import { SESSION_DRAG_MIME } from './PaneDropTarget';
 
 export interface SessionChipProps {
   snapshot: SessionSnapshot;
@@ -14,6 +15,7 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
   const { theme, accent } = useTheme();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(snapshot.title);
+  const [dragging, setDragging] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -57,6 +59,13 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
       data-active={active}
       role="tab"
       aria-selected={active}
+      draggable={true}
+      onDragStart={(e) => {
+        e.dataTransfer.setData(SESSION_DRAG_MIME, snapshot.id.uuid);
+        e.dataTransfer.effectAllowed = 'move';
+        setDragging(true);
+      }}
+      onDragEnd={() => setDragging(false)}
       onClick={editing ? undefined : onSelect}
       onDoubleClick={() => setEditing(true)}
       style={{
@@ -68,9 +77,10 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
         background: active ? accent.value + '1F' : theme.hoverBg,
         color: active ? theme.text : theme.textMed,
         fontSize: 12,
-        cursor: editing ? 'text' : 'pointer',
+        cursor: editing ? 'text' : dragging ? 'grabbing' : 'grab',
         flexShrink: 0,
         userSelect: 'none',
+        opacity: dragging ? 0.5 : 1,
       }}
     >
       <span
@@ -86,6 +96,7 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
       {editing ? (
         <input
           ref={inputRef}
+          draggable={false}
           data-testid={`session-chip-rename-${snapshot.id.uuid}`}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
@@ -111,6 +122,7 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
       {!editing && active && (
         <button
           type="button"
+          draggable={false}
           data-testid={`session-chip-close-${snapshot.id.uuid}`}
           onClick={(e) => {
             e.stopPropagation();
