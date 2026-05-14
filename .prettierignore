@@ -1,0 +1,10 @@
+node_modules/
+out/
+dist/
+pnpm-lock.yaml
+playwright-report/
+test-results/
+coverage/
+design/
+.planning/
+.DS_Store
