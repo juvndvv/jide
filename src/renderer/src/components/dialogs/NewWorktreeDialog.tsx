@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { Project } from '@shared/project';
+import { useTheme } from '../../theme/useTheme';
 
 export function NewWorktreeDialog({
   project,
@@ -10,6 +11,7 @@ export function NewWorktreeDialog({
   onCancel: () => void;
   onCreated: () => void;
 }) {
+  const { theme } = useTheme();
   const [mode, setMode] = useState<'existing' | 'new'>('existing');
   const [branches, setBranches] = useState<string[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>('');
@@ -61,7 +63,7 @@ export function NewWorktreeDialog({
       style={{
         position: 'fixed',
         inset: 0,
-        background: '#0000004D',
+        background: theme.scrim,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -73,10 +75,10 @@ export function NewWorktreeDialog({
         onClick={(e) => e.stopPropagation()}
         style={{
           width: 480,
-          background: '#FFFFFF',
+          background: theme.panelBg,
           borderRadius: 10,
           padding: 20,
-          boxShadow: '0 24px 64px #00000033',
+          boxShadow: theme.modalShadow,
           fontFamily: 'inherit',
         }}
       >
@@ -161,8 +163,8 @@ export function NewWorktreeDialog({
           <div
             data-testid="dialog-error"
             style={{
-              background: '#FFE5E5',
-              color: '#B40000',
+              background: theme.diffDelBg,
+              color: theme.diffDelText,
               padding: 8,
               borderRadius: 6,
               marginBottom: 10,

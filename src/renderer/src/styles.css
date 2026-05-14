@@ -1,7 +1,5 @@
 :root {
-  --jide-bg: #f0eee9;
-  --jide-fg: #1f1f1f;
-  --jide-accent: #d97757;
+  --jide-accent: #F95A5C; /* runtime-overridden by ThemeProvider */
 }
 
 * {
@@ -17,8 +15,6 @@ body,
 }
 
 body {
-  background: var(--jide-bg);
-  color: var(--jide-fg);
   font-family:
     'Open Sauce One',
     system-ui,
@@ -29,10 +25,12 @@ body {
 
 @keyframes jidePulse {
   0% {
-    box-shadow: 0 0 0 0 #f95a5c77;
+    box-shadow: 0 0 0 0 var(--jide-accent);
+    opacity: 0.6;
   }
   100% {
-    box-shadow: 0 0 0 8px #f95a5c00;
+    box-shadow: 0 0 0 8px transparent;
+    opacity: 0;
   }
 }
 

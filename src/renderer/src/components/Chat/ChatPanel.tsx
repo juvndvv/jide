@@ -10,6 +10,7 @@ import { EmptySessions } from './EmptySessions';
 import { useSession } from '../../shortcuts/useSession';
 import { useSessionsList } from '../../shortcuts/useSessionsList';
 import { useSessionHotkey } from './useSessionHotkey';
+import { useTheme } from '../../theme/useTheme';
 
 const DEFAULT_MAX_SESSIONS = 4;
 
@@ -22,6 +23,7 @@ export function ChatPanel({
   worktreeId,
   maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
 }: ChatPanelProps) {
+  const { theme } = useTheme();
   const {
     sessions,
     activeId,
@@ -52,7 +54,7 @@ export function ChatPanel({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#00000040',
+          color: theme.textLow,
           fontFamily: 'ui-monospace, monospace',
           fontSize: 14,
         }}
@@ -70,7 +72,7 @@ export function ChatPanel({
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
-        background: '#FFFFFF',
+        background: theme.panelBg,
         overflow: 'hidden',
       }}
     >
@@ -151,17 +153,18 @@ function ChatBody({
   onKill: () => void;
   listRef: React.MutableRefObject<HTMLDivElement | null>;
 }) {
+  const { theme } = useTheme();
   return (
     <>
       <header
         style={{
           padding: '8px 12px',
-          borderBottom: '1px solid #00000010',
+          borderBottom: `1px solid ${theme.borderHair}`,
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           fontSize: 12,
-          color: '#00000080',
+          color: theme.textMed,
         }}
       >
         <span data-testid="chat-status">{status}</span>
@@ -173,9 +176,9 @@ function ChatBody({
             onClick={onKill}
             style={{
               padding: '4px 10px',
-              border: '1px solid #ED5A46',
-              background: '#FFFFFF',
-              color: '#ED5A46',
+              border: `1px solid ${theme.error}`,
+              background: theme.panelBg,
+              color: theme.error,
               borderRadius: 6,
               fontFamily: 'inherit',
               fontSize: 11,

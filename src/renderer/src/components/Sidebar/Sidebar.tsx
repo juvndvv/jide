@@ -1,7 +1,10 @@
+import { useRef } from 'react';
 import type { Project } from '@shared/project';
+import { useTheme } from '../../theme/useTheme';
 import { SidebarSection } from './SidebarSection';
 import { SidebarRow } from './SidebarRow';
 import { ProjectBranch } from './ProjectBranch';
+import { TweaksPanel } from '../Tweaks';
 
 export function Sidebar({
   projects,
@@ -10,6 +13,8 @@ export function Sidebar({
   onSelectWorktree,
   onAddProject,
   onNewWorktree,
+  tweaksOpen,
+  onToggleTweaks,
 }: {
   projects: Project[];
   activeWorktreeId: string | null;
@@ -17,34 +22,47 @@ export function Sidebar({
   onSelectWorktree: (id: string) => void;
   onAddProject: () => void;
   onNewWorktree: () => void;
+  tweaksOpen: boolean;
+  onToggleTweaks: () => void;
 }) {
+  const { theme, accent, density, sidebarSide } = useTheme();
+  const borderSide = sidebarSide === 'left' ? 'borderRight' : 'borderLeft';
+  const settingsRef = useRef<HTMLButtonElement>(null);
+
   return (
     <aside
       data-testid="sidebar"
       style={{
-        width: 260,
+        width: density.side,
         flexShrink: 0,
         height: '100%',
-        background: '#F6F4EF',
-        borderRight: '1px solid #00000010',
+        background: theme.sidebarBg,
+        [borderSide]: `1px solid ${theme.borderHair}`,
         display: 'flex',
         flexDirection: 'column',
         fontSize: 13,
       }}
     >
-      <div style={{ padding: '12px 14px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div
+        style={{
+          padding: `12px ${density.gap * 2}px 10px`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+        }}
+      >
         <span
           style={{
             fontFamily: '"Bowlby One SC", Anton, Impact, sans-serif',
             fontSize: 22,
-            color: 'var(--jide-accent)',
+            color: accent.value,
             letterSpacing: -0.5,
           }}
         >
           jide
         </span>
       </div>
-      <div style={{ flex: 1, overflow: 'auto', padding: '4px 6px 12px' }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: `4px ${density.gap}px 12px` }}>
         <SidebarSection label="Proyectos">
           {projects.map((p) => (
             <ProjectBranch
@@ -64,11 +82,24 @@ export function Sidebar({
           <SidebarRow icon="folder" onClick={onAddProject} kbd="⌘O">
             Añadir proyecto
           </SidebarRow>
-          <SidebarRow icon="settings" kbd="⌘,">
+          <SidebarRow
+            icon="settings"
+            kbd="⌘,"
+            data-testid="sidebar-settings"
+            anchorRef={settingsRef}
+            onClick={onToggleTweaks}
+          >
             Ajustes
           </SidebarRow>
         </SidebarSection>
       </div>
+      {tweaksOpen && (
+        <TweaksPanel
+          anchorRef={settingsRef}
+          side={sidebarSide}
+          onClose={onToggleTweaks}
+        />
+      )}
     </aside>
   );
 }

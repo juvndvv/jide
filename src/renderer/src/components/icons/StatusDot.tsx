@@ -1,18 +1,30 @@
 import type { ClaudeState } from '@shared/project';
+import { useTheme } from '../../theme/useTheme';
 
 type DotState = ClaudeState | 'done' | 'clean';
 
-const COLORS: Record<DotState, string> = {
-  running: '#F95A5C',
-  awaiting: '#F59E0B',
-  idle: '#B8B8B8',
-  error: '#ED5A46',
-  done: '#10B981',
-  clean: 'transparent',
-};
-
 export function StatusDot({ state, size = 7 }: { state: DotState; size?: number }) {
-  const pulse = state === 'running';
+  const { theme, accent } = useTheme();
+
+  const color = (() => {
+    switch (state) {
+      case 'idle':
+        return theme.textLow;
+      case 'running':
+        return accent.value;
+      case 'awaiting':
+        return theme.warning;
+      case 'error':
+        return theme.error;
+      case 'done':
+        return theme.success;
+      case 'clean':
+        return 'transparent';
+      default:
+        return theme.textDisabled;
+    }
+  })();
+
   return (
     <span
       data-testid={`status-dot-${state}`}
@@ -21,8 +33,8 @@ export function StatusDot({ state, size = 7 }: { state: DotState; size?: number 
         width: size,
         height: size,
         borderRadius: 999,
-        background: COLORS[state],
-        animation: pulse ? 'jidePulse 1.6s ease-out infinite' : 'none',
+        background: color,
+        animation: state === 'running' ? 'jidePulse 1.6s ease-out infinite' : 'none',
         flexShrink: 0,
       }}
     />

@@ -1,10 +1,12 @@
 import type { SessionSnapshot } from '@shared/session';
+import { useTheme } from '../../theme/useTheme';
 
 export interface SessionMetaProps {
   snapshot: SessionSnapshot;
 }
 
 export function SessionMeta({ snapshot }: SessionMetaProps) {
+  const { theme } = useTheme();
   return (
     <div
       data-testid="session-meta"
@@ -13,10 +15,10 @@ export function SessionMeta({ snapshot }: SessionMetaProps) {
         gap: 12,
         padding: '4px 12px',
         fontSize: 11,
-        color: '#00000080',
+        color: theme.textMed,
         fontFamily: 'ui-monospace, monospace',
-        borderBottom: '1px solid #00000008',
-        background: '#00000003',
+        borderBottom: `1px solid ${theme.borderHair}`,
+        background: theme.hoverBg,
       }}
     >
       <span data-testid="session-meta-model">model: {snapshot.model}</span>

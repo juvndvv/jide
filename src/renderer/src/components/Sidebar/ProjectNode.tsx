@@ -1,6 +1,7 @@
 import type { Project, Worktree } from '@shared/project';
 import { JIcon } from '../icons/JIcon';
 import { WorktreeRow } from './WorktreeRow';
+import { useTheme } from '../../theme/useTheme';
 
 export function ProjectNode({
   project,
@@ -15,6 +16,7 @@ export function ProjectNode({
   onToggle: () => void;
   onSelectWorktree: (id: string) => void;
 }) {
+  const { theme } = useTheme();
   return (
     <div>
       <button
@@ -42,12 +44,12 @@ export function ProjectNode({
         <JIcon
           name={project.expanded ? 'chev-d' : 'chev-r'}
           size={11}
-          style={{ color: '#00000060' }}
+          style={{ color: theme.textMed }}
         />
         <JIcon
           name={project.expanded ? 'folder-open' : 'folder'}
           size={14}
-          style={{ color: '#00000080' }}
+          style={{ color: theme.textMed }}
         />
         <span
           style={{
@@ -63,7 +65,7 @@ export function ProjectNode({
           style={{
             fontFamily: 'ui-monospace, monospace',
             fontSize: 11,
-            color: '#00000060',
+            color: theme.textMed,
             fontWeight: 500,
           }}
         >

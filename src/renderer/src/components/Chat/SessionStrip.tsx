@@ -1,5 +1,6 @@
 import type { SessionSnapshot } from '@shared/session';
 import { SessionChip } from './SessionChip';
+import { useTheme } from '../../theme/useTheme';
 
 export interface SessionStripProps {
   sessions: SessionSnapshot[];
@@ -20,6 +21,7 @@ export function SessionStrip({
   onClose,
   onNew,
 }: SessionStripProps) {
+  const { theme } = useTheme();
   return (
     <div
       data-testid="session-strip"
@@ -29,7 +31,7 @@ export function SessionStrip({
         alignItems: 'center',
         gap: 6,
         padding: '6px 12px',
-        borderBottom: '1px solid #00000010',
+        borderBottom: `1px solid ${theme.borderHair}`,
         overflowX: 'auto',
         whiteSpace: 'nowrap',
       }}
@@ -55,9 +57,9 @@ export function SessionStrip({
           marginLeft: 4,
           padding: '4px 10px',
           borderRadius: 999,
-          border: '1px dashed #00000030',
+          border: `1px dashed ${theme.border}`,
           background: 'transparent',
-          color: capReached ? '#00000040' : '#000000B0',
+          color: capReached ? theme.textDisabled : theme.textMed,
           cursor: capReached ? 'not-allowed' : 'pointer',
           fontSize: 12,
           flexShrink: 0,
