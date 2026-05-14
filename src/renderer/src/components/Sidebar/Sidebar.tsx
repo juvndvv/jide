@@ -1,8 +1,10 @@
+import { useRef, useState } from 'react';
 import type { Project } from '@shared/project';
 import { useTheme } from '../../theme/useTheme';
 import { SidebarSection } from './SidebarSection';
 import { SidebarRow } from './SidebarRow';
 import { ProjectBranch } from './ProjectBranch';
+import { TweaksPanel } from '../Tweaks';
 
 export function Sidebar({
   projects,
@@ -21,6 +23,8 @@ export function Sidebar({
 }) {
   const { theme, accent, density, sidebarSide } = useTheme();
   const borderSide = sidebarSide === 'left' ? 'borderRight' : 'borderLeft';
+  const settingsRef = useRef<HTMLButtonElement>(null);
+  const [tweaksOpen, setTweaksOpen] = useState(false);
 
   return (
     <aside
@@ -75,11 +79,24 @@ export function Sidebar({
           <SidebarRow icon="folder" onClick={onAddProject} kbd="⌘O">
             Añadir proyecto
           </SidebarRow>
-          <SidebarRow icon="settings" kbd="⌘," data-testid="sidebar-settings">
+          <SidebarRow
+            icon="settings"
+            kbd="⌘,"
+            data-testid="sidebar-settings"
+            anchorRef={settingsRef}
+            onClick={() => setTweaksOpen((v) => !v)}
+          >
             Ajustes
           </SidebarRow>
         </SidebarSection>
       </div>
+      {tweaksOpen && (
+        <TweaksPanel
+          anchorRef={settingsRef}
+          side={sidebarSide}
+          onClose={() => setTweaksOpen(false)}
+        />
+      )}
     </aside>
   );
 }
