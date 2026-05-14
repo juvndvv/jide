@@ -81,7 +81,11 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
           <button
             type="button"
             data-testid="chat-kill"
-            onClick={() => void kill()}
+            onClick={() => {
+              kill().catch((err: unknown) => {
+                console.error('[jide] sessions:kill failed', err);
+              });
+            }}
             style={{
               padding: '4px 10px',
               border: '1px solid #ED5A46',
@@ -119,11 +123,26 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
       <ApprovalBar
         awaitingToolUseId={snapshot?.awaitingToolUseId ?? null}
         toolName={pendingTool?.name ?? null}
-        onApprove={(id) => void approveTool(id, true)}
-        onReject={(id, reason) => void approveTool(id, false, reason)}
+        onApprove={(id) => {
+          approveTool(id, true).catch((err: unknown) => {
+            console.error('[jide] sessions:approve-tool failed', err);
+          });
+        }}
+        onReject={(id, reason) => {
+          approveTool(id, false, reason).catch((err: unknown) => {
+            console.error('[jide] sessions:approve-tool failed', err);
+          });
+        }}
       />
 
-      <Composer onSubmit={(text) => void send(text)} disabled={!worktreeId || isBusy} />
+      <Composer
+        onSubmit={(text) => {
+          send(text).catch((err: unknown) => {
+            console.error('[jide] sessions:send failed', err);
+          });
+        }}
+        disabled={!worktreeId || isBusy}
+      />
     </main>
   );
 }

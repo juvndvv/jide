@@ -24,7 +24,10 @@ export function useWorktrees(projectId: string | null): UseWorktrees {
 
   useEffect(() => {
     setLoading(true);
-    void refresh();
+    refresh().catch((err: unknown) => {
+      console.error('[jide] worktrees:list failed', err);
+      setLoading(false);
+    });
     if (!projectId) return;
     const offStatus = window.jide.on('worktrees:status-changed', (payload) => {
       if (payload.projectId !== projectId) return;
