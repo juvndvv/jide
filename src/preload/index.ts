@@ -56,6 +56,16 @@ const api: JideApi = {
     getActive: (worktreeId) =>
       ipcRenderer.invoke('sessions:get-active', { worktreeId }) as Promise<string | null>,
   },
+  terminal: {
+    create: (worktreeId, cwd, cols = 80, rows = 24) =>
+      ipcRenderer.invoke('terminal:create', { worktreeId, cwd, cols, rows }) as Promise<{ pid: number }>,
+    write: (worktreeId, data) =>
+      ipcRenderer.invoke('terminal:write', { worktreeId, data }) as Promise<void>,
+    resize: (worktreeId, cols, rows) =>
+      ipcRenderer.invoke('terminal:resize', { worktreeId, cols, rows }) as Promise<void>,
+    kill: (worktreeId) =>
+      ipcRenderer.invoke('terminal:kill', { worktreeId }) as Promise<void>,
+  },
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void): (() => void) => {
     if (!(EVENTS as readonly string[]).includes(event)) {
       throw new Error(`Unknown event: ${String(event)}`);

@@ -11,6 +11,7 @@ import type {
 } from '@shared/ipc';
 import { CHANNELS, EVENTS } from '@shared/ipc';
 import type { SettingsSchema, ThemeMode, TabRef } from '@shared/settings';
+import type { WorktreeLayout } from '@shared/layout';
 import type { AccentId, DensityId, SidebarSide } from '@shared/theme';
 import type { ClaudeState, Project, Worktree, WorktreeStatus } from '@shared/project';
 import type { PersistedSession, SessionSnapshot } from '@shared/session';
@@ -47,6 +48,10 @@ describe('shared/ipc — runtime', () => {
         'sessions:rename',
         'sessions:set-active',
         'sessions:get-active',
+        'terminal:create',
+        'terminal:write',
+        'terminal:resize',
+        'terminal:kill',
       ].sort(),
     );
   });
@@ -79,7 +84,8 @@ describe('shared/ipc — type contract', () => {
         | 'projects'
         | 'maxSessionsPerWorktree'
         | 'activeSessionByWt'
-        | 'sessions';
+        | 'sessions'
+        | 'layoutByWt';
     }>();
   });
 
@@ -147,6 +153,7 @@ describe('shared/ipc — settings:set discriminated payload', () => {
       | { key: 'maxSessionsPerWorktree'; value: number }
       | { key: 'activeSessionByWt'; value: Record<string, string> }
       | { key: 'sessions'; value: Record<string, PersistedSession[]> }
+      | { key: 'layoutByWt'; value: Record<string, WorktreeLayout> }
     >();
   });
 
@@ -222,6 +229,8 @@ describe('shared/ipc — events drift guards', () => {
         'worktrees:changed',
         'sessions:event',
         'sessions:list-changed',
+        'terminal:data',
+        'terminal:exit',
       ].sort(),
     );
   });
@@ -288,5 +297,43 @@ describe('shared/ipc — JideApi v2 surface', () => {
     expectTypeOf<JideApi['on']>().toEqualTypeOf<
       <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void
     >();
+  });
+});
+
+describe('shared/ipc — terminal channels and events', () => {
+  it('declares the terminal channels', () => {
+    expect(CHANNELS).toContain('terminal:create');
+    expect(CHANNELS).toContain('terminal:write');
+    expect(CHANNELS).toContain('terminal:resize');
+    expect(CHANNELS).toContain('terminal:kill');
+  });
+
+  it('declares terminal events', () => {
+    expect(EVENTS).toContain('terminal:data');
+    expect(EVENTS).toContain('terminal:exit');
+  });
+
+  it('terminal:create req/res types', () => {
+    expectTypeOf<Req<'terminal:create'>>().toEqualTypeOf<{
+      worktreeId: string;
+      cwd: string;
+      cols: number;
+      rows: number;
+    }>();
+    expectTypeOf<Res<'terminal:create'>>().toEqualTypeOf<{ pid: number }>();
+  });
+
+  it('terminal:write req is void-responding', () => {
+    expectTypeOf<Req<'terminal:write'>>().toEqualTypeOf<{ worktreeId: string; data: string }>();
+    expectTypeOf<Res<'terminal:write'>>().toEqualTypeOf<void>();
+  });
+
+  it('JideApi.terminal surface is correct', () => {
+    expectTypeOf<JideApi['terminal']>().toEqualTypeOf<{
+      create: (worktreeId: string, cwd: string, cols?: number, rows?: number) => Promise<{ pid: number }>;
+      write: (worktreeId: string, data: string) => Promise<void>;
+      resize: (worktreeId: string, cols: number, rows: number) => Promise<void>;
+      kill: (worktreeId: string) => Promise<void>;
+    }>();
   });
 });
