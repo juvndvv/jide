@@ -1,15 +1,16 @@
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { TopChromeStrip } from './components/Chrome/TopChromeStrip';
 import { StatusBar } from './components/StatusBar/StatusBar';
 import { TabBar } from './components/TabBar';
+import { WorktreeView } from './components/Worktree/WorktreeView';
 import { useProjects } from './shortcuts/useProjects';
 import { useAllWorktrees } from './shortcuts/useAllWorktrees';
 import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
 import { useGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
+import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
 
 export function App(): JSX.Element {
   const { theme, sidebarSide } = useTheme();
@@ -33,6 +34,8 @@ export function App(): JSX.Element {
   const activeProject = activeTab ? (projects.find((p) => p.id === activeTab.projectId) ?? null) : null;
   const activeWt = activeWorktreeId ? (worktreesById.get(activeWorktreeId) ?? null) : null;
 
+  const { layout, ops } = useWorktreeLayout(activeWorktreeId);
+
   const handlers = useMemo(
     () => ({
       onToggleTweaks: () => setTweaksOpen((v) => !v),
@@ -44,8 +47,9 @@ export function App(): JSX.Element {
         if (dialogOpenFor) setDialogOpenFor(null);
         else if (tweaksOpen) setTweaksOpen(false);
       },
+      onToggleTerminal: () => ops.cycleTerminal(),
     }),
-    [activeProject, projects, dialogOpenFor, tweaksOpen],
+    [activeProject, projects, dialogOpenFor, tweaksOpen, ops],
   );
 
   useGlobalShortcuts(handlers);
@@ -111,10 +115,22 @@ export function App(): JSX.Element {
               else if (projects[0]) setDialogOpenFor(projects[0].id);
             }}
           />
-          <ChatPanel worktreeId={activeWorktreeId} maxSessionsPerWorktree={maxSessions} />
+          <WorktreeView
+            worktreeId={activeWorktreeId}
+            worktree={activeWt}
+            shellName="zsh"
+            maxSessionsPerWorktree={maxSessions}
+            layout={layout}
+            ops={ops}
+          />
         </main>
       </div>
-      <StatusBar project={activeProject} worktree={activeWt} />
+      <StatusBar
+        project={activeProject}
+        worktree={activeWt}
+        terminalSplit={layout.terminal}
+        onToggleTerminal={() => ops.cycleTerminal()}
+      />
 
       {dialogOpenFor && (
         <NewWorktreeDialog

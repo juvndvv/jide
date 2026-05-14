@@ -1,11 +1,14 @@
 import type { JSX } from 'react';
 import type { Project, Worktree } from '@shared/project';
 import { StatusItem } from './StatusItem';
+import { JIcon } from '../icons/JIcon';
 import { useTheme } from '../../theme/useTheme';
 
 export interface StatusBarProps {
   project: Project | null;
   worktree: Worktree | null;
+  terminalSplit?: 'off' | 'bottom' | 'side';
+  onToggleTerminal?: () => void;
 }
 
 function describeClaude(state: Worktree['claude']): string {
@@ -22,7 +25,7 @@ function describeClaude(state: Worktree['claude']): string {
   }
 }
 
-export function StatusBar({ project, worktree }: StatusBarProps): JSX.Element {
+export function StatusBar({ project, worktree, terminalSplit = 'off', onToggleTerminal }: StatusBarProps): JSX.Element {
   const { accent } = useTheme();
   if (!worktree || !project) {
     return (
@@ -58,6 +61,35 @@ export function StatusBar({ project, worktree }: StatusBarProps): JSX.Element {
       <StatusItem icon="arrow-down">{worktree.behind}</StatusItem>
       <StatusItem icon="diff">{worktree.changes} cambios</StatusItem>
       <div style={{ flex: 1 }} />
+      {/* Term button — rgba(255,255,255,0.18) is intentional: white highlight on accent band (same exception as #FFFFFF text on accent, established in Fase 5) */}
+      <button
+        type="button"
+        data-testid="status-term-button"
+        aria-label="Terminal (⌘\\)"
+        onClick={onToggleTerminal}
+        style={{
+          height: 22,
+          padding: '0 9px',
+          marginRight: 2,
+          borderRadius: 4,
+          border: 0,
+          background: terminalSplit !== 'off' ? 'rgba(255,255,255,0.18)' : 'transparent',
+          color: '#FFFFFF',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 11.5,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+        }}
+      >
+        <JIcon
+          name={terminalSplit === 'bottom' ? 'split-v' : terminalSplit === 'side' ? 'split-h' : 'terminal'}
+          size={11}
+        />
+        <span>Term</span>
+        <span style={{ opacity: 0.7 }}>⌘\</span>
+      </button>
       <StatusItem icon="claude">{describeClaude(worktree.claude)}</StatusItem>
       <StatusItem icon="cli">$ {project.path}</StatusItem>
     </footer>

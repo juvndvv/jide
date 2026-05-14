@@ -4,6 +4,7 @@ export interface GlobalShortcutHandlers {
   onToggleTweaks?: () => void;
   onNewWorktree?: () => void;
   onEscape?: () => void;
+  onToggleTerminal?: () => void;
 }
 
 export function useGlobalShortcuts(handlers: GlobalShortcutHandlers): void {
@@ -18,6 +19,11 @@ export function useGlobalShortcuts(handlers: GlobalShortcutHandlers): void {
       if (mod && (e.key === 'n' || e.key === 'N')) {
         e.preventDefault();
         handlers.onNewWorktree?.();
+        return;
+      }
+      if (mod && e.key === '\\') {
+        e.preventDefault();
+        handlers.onToggleTerminal?.();
         return;
       }
       if (e.key === 'Escape') {
