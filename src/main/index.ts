@@ -7,6 +7,14 @@ import { createWatcherManager } from './projects/watcher.js';
 import { sendEvent } from './ipc/events.js';
 import { SessionManager } from './claude/manager.js';
 
+// Safety net: anything that escapes a .catch() lands here with a full stack.
+// In dev this surfaces the offending call site; in production it keeps the
+// process alive instead of crashing on a single failed IPC round-trip.
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[jide] unhandledRejection:', reason);
+  console.error('[jide] promise:', promise);
+});
+
 let manager: SessionManager | null = null;
 
 app

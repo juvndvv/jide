@@ -79,7 +79,12 @@ export function createWatcherManager(
       }
       for (const id of [...handles.keys()]) {
         if (!seen.has(id)) {
-          void handles.get(id)?.dispose();
+          handles
+            .get(id)
+            ?.dispose()
+            .catch((err: unknown) => {
+              console.error('[watcher] dispose failed', err);
+            });
           handles.delete(id);
         }
       }
