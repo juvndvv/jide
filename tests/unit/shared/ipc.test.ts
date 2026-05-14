@@ -10,7 +10,8 @@ import type {
   Res,
 } from '@shared/ipc';
 import { CHANNELS, EVENTS } from '@shared/ipc';
-import type { SettingsSchema, ThemeMode } from '@shared/settings';
+import type { SettingsSchema, ThemeMode, TabRef } from '@shared/settings';
+import type { AccentId, DensityId, SidebarSide } from '@shared/theme';
 import type { ClaudeState, Project, Worktree, WorktreeStatus } from '@shared/project';
 import type { PersistedSession, SessionSnapshot } from '@shared/session';
 
@@ -70,7 +71,11 @@ describe('shared/ipc — type contract', () => {
     expectTypeOf<Req<'settings:get'>>().toEqualTypeOf<{
       key:
         | 'theme'
+        | 'density'
+        | 'accent'
+        | 'sidebarSide'
         | 'lastWorktreeId'
+        | 'openTabs'
         | 'projects'
         | 'maxSessionsPerWorktree'
         | 'activeSessionByWt'
@@ -133,7 +138,11 @@ describe('shared/ipc — settings:set discriminated payload', () => {
   it('matches key with value (positive)', () => {
     expectTypeOf<Req<'settings:set'>>().toEqualTypeOf<
       | { key: 'theme'; value: ThemeMode }
+      | { key: 'density'; value: DensityId }
+      | { key: 'accent'; value: AccentId }
+      | { key: 'sidebarSide'; value: SidebarSide }
       | { key: 'lastWorktreeId'; value: string | null }
+      | { key: 'openTabs'; value: TabRef[] }
       | { key: 'projects'; value: Project[] }
       | { key: 'maxSessionsPerWorktree'; value: number }
       | { key: 'activeSessionByWt'; value: Record<string, string> }
