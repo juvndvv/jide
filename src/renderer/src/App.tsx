@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
@@ -9,6 +9,16 @@ export function App() {
   const [activeWorktreeId, setActiveWorktreeId] = useState<string | null>(null);
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const [dialogOpenFor, setDialogOpenFor] = useState<string | null>(null);
+  const [maxSessions, setMaxSessions] = useState<number>(4);
+
+  useEffect(() => {
+    window.jide.settings
+      .get('maxSessionsPerWorktree')
+      .then(setMaxSessions)
+      .catch((err: unknown) => {
+        console.error('[jide] settings:get maxSessionsPerWorktree failed', err);
+      });
+  }, []);
 
   return (
     <div style={{ display: 'flex', height: '100%' }}>
@@ -34,7 +44,7 @@ export function App() {
         }}
       />
 
-      <ChatPanel worktreeId={activeWorktreeId} />
+      <ChatPanel worktreeId={activeWorktreeId} maxSessionsPerWorktree={maxSessions} />
 
       {dialogOpenFor && (
         <NewWorktreeDialog

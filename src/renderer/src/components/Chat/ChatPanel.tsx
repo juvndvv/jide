@@ -4,21 +4,37 @@ import { Message } from './Message';
 import { Composer } from './Composer';
 import { ApprovalBar } from './ApprovalBar';
 import { StreamingIndicator } from './StreamingIndicator';
+import { SessionStrip } from './SessionStrip';
+import { SessionMeta } from './SessionMeta';
+import { EmptySessions } from './EmptySessions';
 import { useSession } from '../../shortcuts/useSession';
+import { useSessionsList } from '../../shortcuts/useSessionsList';
+import { useSessionHotkey } from './useSessionHotkey';
+
+const DEFAULT_MAX_SESSIONS = 4;
 
 export interface ChatPanelProps {
   worktreeId: string | null;
+  maxSessionsPerWorktree?: number;
 }
 
-export function ChatPanel({ worktreeId }: ChatPanelProps) {
-  const { snapshot, send, approveTool, kill } = useSession(worktreeId);
+export function ChatPanel({
+  worktreeId,
+  maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
+}: ChatPanelProps) {
+  const { sessions, activeId, setActive, create, rename, kill: killSession, capReached } =
+    useSessionsList(worktreeId, maxSessionsPerWorktree);
+  const { snapshot, send, approveTool, kill: killActive } = useSession(worktreeId, activeId);
   const listRef = useRef<HTMLDivElement | null>(null);
 
-  // Autoscroll to bottom on every message change so the latest turn stays visible.
   useEffect(() => {
     if (!listRef.current) return;
     listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [snapshot?.messages.length, snapshot?.status]);
+
+  useSessionHotkey(worktreeId !== null && !capReached, () => {
+    void create();
+  });
 
   if (!worktreeId) {
     return (
@@ -39,15 +55,10 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
     );
   }
 
-  const status = snapshot?.status ?? 'idle';
-  const isBusy = status === 'starting' || status === 'requesting' || status === 'streaming';
-  const messages = snapshot?.messages ?? [];
-  const pendingTool = findPendingTool(messages, snapshot?.awaitingToolUseId);
-
   return (
     <main
       data-testid="chat-panel"
-      data-status={status}
+      data-status={snapshot?.status ?? 'idle'}
       style={{
         flex: 1,
         display: 'flex',
@@ -56,6 +67,85 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
         overflow: 'hidden',
       }}
     >
+      <SessionStrip
+        sessions={sessions}
+        activeId={activeId}
+        capReached={capReached}
+        onSelect={(id) => {
+          void setActive(id);
+        }}
+        onRename={(id, title) => {
+          void rename(id, title);
+        }}
+        onClose={(id) => {
+          void killSession(id);
+        }}
+        onNew={() => {
+          void create();
+        }}
+      />
+
+      {sessions.length === 0 || !snapshot ? (
+        <EmptySessions
+          onCreate={() => {
+            void create();
+          }}
+          disabled={capReached}
+        />
+      ) : (
+        <>
+          <SessionMeta snapshot={snapshot} />
+          <ChatBody
+            messages={snapshot.messages}
+            status={snapshot.status}
+            onKill={() => {
+              killActive().catch((err: unknown) => {
+                console.error('[jide] sessions:kill failed', err);
+              });
+            }}
+            listRef={listRef}
+          />
+          <ApprovalBar
+            awaitingToolUseId={snapshot.awaitingToolUseId ?? null}
+            toolName={findPendingTool(snapshot.messages, snapshot.awaitingToolUseId)?.name ?? null}
+            onApprove={(id) => {
+              approveTool(id, true).catch((err: unknown) => {
+                console.error('[jide] sessions:approve-tool failed', err);
+              });
+            }}
+            onReject={(id, reason) => {
+              approveTool(id, false, reason).catch((err: unknown) => {
+                console.error('[jide] sessions:approve-tool failed', err);
+              });
+            }}
+          />
+          <Composer
+            onSubmit={(text) => {
+              send(text).catch((err: unknown) => {
+                console.error('[jide] sessions:send failed', err);
+              });
+            }}
+            disabled={!activeId || isBusy(snapshot.status)}
+          />
+        </>
+      )}
+    </main>
+  );
+}
+
+function ChatBody({
+  messages,
+  status,
+  onKill,
+  listRef,
+}: {
+  messages: Msg[];
+  status: string;
+  onKill: () => void;
+  listRef: React.MutableRefObject<HTMLDivElement | null>;
+}) {
+  return (
+    <>
       <header
         style={{
           padding: '8px 12px',
@@ -68,24 +158,12 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
         }}
       >
         <span data-testid="chat-status">{status}</span>
-        {snapshot?.model && (
-          <span style={{ fontFamily: 'ui-monospace, monospace' }}>{snapshot.model}</span>
-        )}
-        {snapshot?.totalCostUsd !== undefined && snapshot.totalCostUsd > 0 && (
-          <span style={{ fontFamily: 'ui-monospace, monospace' }}>
-            ${snapshot.totalCostUsd.toFixed(4)}
-          </span>
-        )}
         <span style={{ flex: 1 }} />
-        {snapshot && isBusy && (
+        {isBusy(status) && (
           <button
             type="button"
             data-testid="chat-kill"
-            onClick={() => {
-              kill().catch((err: unknown) => {
-                console.error('[jide] sessions:kill failed', err);
-              });
-            }}
+            onClick={onKill}
             style={{
               padding: '4px 10px',
               border: '1px solid #ED5A46',
@@ -102,7 +180,6 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
           </button>
         )}
       </header>
-
       <div
         ref={listRef}
         data-testid="chat-messages"
@@ -117,34 +194,14 @@ export function ChatPanel({ worktreeId }: ChatPanelProps) {
         {messages.map((m) => (
           <Message key={m.id} message={m} />
         ))}
-        {isBusy && <StreamingIndicator />}
+        {isBusy(status) && <StreamingIndicator />}
       </div>
-
-      <ApprovalBar
-        awaitingToolUseId={snapshot?.awaitingToolUseId ?? null}
-        toolName={pendingTool?.name ?? null}
-        onApprove={(id) => {
-          approveTool(id, true).catch((err: unknown) => {
-            console.error('[jide] sessions:approve-tool failed', err);
-          });
-        }}
-        onReject={(id, reason) => {
-          approveTool(id, false, reason).catch((err: unknown) => {
-            console.error('[jide] sessions:approve-tool failed', err);
-          });
-        }}
-      />
-
-      <Composer
-        onSubmit={(text) => {
-          send(text).catch((err: unknown) => {
-            console.error('[jide] sessions:send failed', err);
-          });
-        }}
-        disabled={!worktreeId || isBusy}
-      />
-    </main>
+    </>
   );
+}
+
+function isBusy(status: string): boolean {
+  return status === 'starting' || status === 'requesting' || status === 'streaming';
 }
 
 function findPendingTool(
