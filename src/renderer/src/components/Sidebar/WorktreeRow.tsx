@@ -66,6 +66,24 @@ export function WorktreeRow({
       >
         {worktree.branch}
       </span>
+      {worktree.ahead > 0 && (
+        <span
+          data-testid={`worktree-ahead-${worktree.branch}`}
+          title={`${worktree.ahead} commits ahead of upstream`}
+          style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, color: '#00000060' }}
+        >
+          ↑{worktree.ahead}
+        </span>
+      )}
+      {worktree.behind > 0 && (
+        <span
+          data-testid={`worktree-behind-${worktree.branch}`}
+          title={`${worktree.behind} commits behind upstream`}
+          style={{ fontFamily: 'ui-monospace, monospace', fontSize: 10, color: '#00000060' }}
+        >
+          ↓{worktree.behind}
+        </span>
+      )}
       {worktree.changes > 0 && (
         <span
           data-testid={`worktree-changes-${worktree.branch}`}
