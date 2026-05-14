@@ -32,7 +32,7 @@ export function parseWorktreeList(stdout: string): RawWorktreeEntry[] {
         entry.branch = line.slice('branch '.length).replace(/^refs\/heads\//, '');
       } else if (line === 'detached') entry.detached = true;
       else if (line === 'bare') entry.bare = true;
-      else if (line.startsWith('locked')) entry.locked = true;
+      else if (line === 'locked' || line.startsWith('locked ')) entry.locked = true;
     }
     return entry;
   });

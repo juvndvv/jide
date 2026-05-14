@@ -12,10 +12,14 @@ export interface TmpRepo {
   writeFile: (relPath: string, content: string) => void;
   /** `git add -A && git commit -m <message>`. */
   commit: (message: string) => void;
+  /** Return a path under the same root tmpdir as the repo. Reaped by cleanup. */
+  siblingPath: (name: string) => string;
 }
 
 export function tmpRepo(): TmpRepo {
-  const cwd = mkdtempSync(join(tmpdir(), 'jide-git-'));
+  const root = mkdtempSync(join(tmpdir(), 'jide-git-'));
+  const cwd = join(root, 'repo');
+  mkdirSync(cwd, { recursive: true });
 
   const run = (cmd: string, args: string[]): string => {
     const { stdout } = execaSync(cmd, args, { cwd, env: cleanGitEnv() });
@@ -29,7 +33,7 @@ export function tmpRepo(): TmpRepo {
 
   return {
     cwd,
-    cleanup: () => rmSync(cwd, { recursive: true, force: true }),
+    cleanup: () => rmSync(root, { recursive: true, force: true }),
     run,
     writeFile: (relPath, content) => {
       const fullPath = join(cwd, relPath);
@@ -40,6 +44,7 @@ export function tmpRepo(): TmpRepo {
       run('git', ['add', '-A']);
       run('git', ['commit', '-m', message, '--allow-empty']);
     },
+    siblingPath: (name) => join(root, name),
   };
 }
 

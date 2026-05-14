@@ -9,12 +9,14 @@ export interface GitExecResult {
 export class GitError extends Error {
   readonly args: readonly string[];
   readonly exitCode: number;
+  readonly stdout: string;
   readonly stderr: string;
-  constructor(args: readonly string[], exitCode: number, stderr: string) {
+  constructor(args: readonly string[], exitCode: number, stdout: string, stderr: string) {
     super(`git ${args.join(' ')} exited with code ${exitCode}: ${stderr.trim()}`);
     this.name = 'GitError';
     this.args = args;
     this.exitCode = exitCode;
+    this.stdout = stdout;
     this.stderr = stderr;
   }
 }
@@ -25,7 +27,6 @@ export async function gitExec(repoRoot: string, args: readonly string[]): Promis
       cwd: repoRoot,
       stdin: 'ignore',
       env: { LC_ALL: 'C', LANG: 'C' },
-      extendEnv: true,
       timeout: 30_000,
     });
     return {
@@ -35,8 +36,9 @@ export async function gitExec(repoRoot: string, args: readonly string[]): Promis
     };
   } catch (err) {
     if (err instanceof ExecaError) {
+      const stdout = typeof err.stdout === 'string' ? err.stdout : '';
       const stderr = typeof err.stderr === 'string' ? err.stderr : '';
-      throw new GitError(args, err.exitCode ?? -1, stderr);
+      throw new GitError(args, err.exitCode ?? -1, stdout, stderr);
     }
     throw err;
   }
