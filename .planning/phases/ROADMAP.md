@@ -11,7 +11,7 @@
 | 3 — Sesión Claude end-to-end | ✅ Mergeable (PR pending) | `.planning/plans/2026-05-14-fase-3-sesion-claude.md` |
 | 4 — Multi-sesión por worktree | ✅ Mergeable (PR #4) | `.planning/plans/2026-05-14-fase-4-multi-sesion.md` |
 | 5 — Tabs + UI shell | ✅ Mergeable (PR #5) | `.planning/plans/2026-05-14-fase-5-tabs-ui-shell.md` |
-| 6 — Terminal split | 🗒 Outline (siguiente) | — |
+| 6 — Splits (terminal + chat) | 📝 Plan listo | `.planning/plans/2026-05-14-fase-6-splits.md` |
 | 7 — File viewer + watcher | 🗒 Outline | — |
 | 8 — Command palette + atajos | 🗒 Outline | — |
 | 9 — Polish & packaging | 🗒 Outline | — |
@@ -307,64 +307,64 @@ tests/
 
 ---
 
-## Fase 6 — Terminal split
+## Fase 6 — Splits (terminal + chat)
 
-**Goal:** Cada worktree tiene un terminal interactivo (zsh por defecto) en su cwd. Toggle con ⌘\ alterna off → bottom split → side split. Salida real del proceso, input real del usuario.
+**Goal:** Dos ejes de split por worktree, totalmente componibles:
 
-**Riesgo principal:** `node-pty` requiere recompilación nativa por versión de Electron. Si el setup de electron-rebuild no es robusto, el dev experience se rompe en cada bump.
+1. **Terminal split** — PTY interactivo en `cwd = worktree.path`, ciclo `off → bottom → side → off` con `⌘\` o botón en `StatusBar`. Theme xterm sincronizado con `useTheme()`. Persiste entre cambios de tab; muere en `before-quit`.
+2. **Chat split** — área de chat se trocea en un **árbol binario** de hasta 4 hojas. Cada hoja muestra una sesión Claude (o queda vacía como drop-target). Split desde el botón en cabecera del panel; arrastrar chips del `SessionStrip` asigna sesiones. Sin hotkey en Fase 6.
 
-**Stack añadido:** `node-pty`, `xterm.js`, `@xterm/addon-fit`, `@xterm/addon-web-links`, `electron-rebuild` (o `@electron/rebuild`).
+**Riesgo principal:** `node-pty` requiere recompilación contra Electron 35. `@electron/rebuild` con script `postinstall` mitiga; `probeNativeBindings` da error claro si falla.
 
-### Nuevos archivos / cambios
+**Stack añadido:** `node-pty`, `xterm`, `@xterm/addon-fit`, `@xterm/addon-web-links`, `@electron/rebuild`.
 
-```
-src/
-  main/
-    pty/
-      manager.ts               # PtyManager: spawn/write/resize/kill por worktree
-      shell-detect.ts          # detecta zsh/bash según OS y user shell
-    ipc/
-      terminal.ts              # canales terminal:* + eventos terminal:data
-  renderer/src/components/Terminal/
-    TerminalPanel.tsx          # contiene xterm.js
-    TerminalHeader.tsx         # zsh · path + toggles
-    useXterm.ts                # hook que monta xterm + suscribe a eventos main
-electron-builder.yml           # primer uso real para configurar rebuild de node-pty
-package.json                   # +scripts: postinstall electron-rebuild
-tests/
-  unit/main/pty/
-  e2e/terminal.spec.ts
-```
+### Decisiones cerradas
+
+| Pregunta | Respuesta |
+|---|---|
+| Cap de hojas chat | 4 |
+| Orientación del split chat | Toggle vertical ↔ horizontal por nodo |
+| Asignación de sesión a hoja | Drag desde `SessionStrip` (HTML5 DnD) |
+| Hotkey chat split | Ninguna en Fase 6 — solo botones en cabecera |
+| PTY granularidad | Uno por worktree (sobrevive al cambio de tab) |
+| Shell por defecto | `$SHELL` del usuario con fallback OS |
+| `cwd` del PTY | `worktree.path` (no sincroniza con `cd`) |
 
 ### Tasks (alto nivel)
 
-- [ ] **6.1** Setup electron-rebuild + script `postinstall`. Verificar que `pnpm install` deja node-pty compilado para Electron 35.
-- [ ] **6.2** `PtyManager.create(wtId, cwd)` → spawnea shell con env limpio + cwd correcto.
-- [ ] **6.3** Stream stdout del PTY como eventos `terminal:data` (chunked).
-- [ ] **6.4** Canal `terminal:write` para input del usuario.
-- [ ] **6.5** Canal `terminal:resize` cuando el panel cambia tamaño.
-- [ ] **6.6** `useXterm` monta xterm.js con tema sincronizado a `useTheme()`.
-- [ ] **6.7** Toggle ⌘\ off/bottom-split/side-split (ya hay state en Fase 5).
-- [ ] **6.8** Persistir orientación del split por worktree.
-- [ ] **6.9** Cerrar la sesión PTY al cerrar el tab del worktree.
-- [ ] **6.10** Cleanup al cerrar la app: matar todos los PTYs.
-
-### Decisiones abiertas
-
-1. **¿Un PTY por worktree o un PTY por tab?** Un PTY por worktree (persiste entre tabs cerrados/abiertos del mismo worktree). Si el usuario lo cierra explícitamente sí muere.
-2. **¿Shell por defecto?** El del usuario (`$SHELL`). Configurable en Ajustes (futuro).
-3. **¿Cómo se sincroniza el cwd cuando claude cambia de carpeta?** El PTY tiene su propio cwd; no nos sincronizamos con claude. Si el usuario teclea `cd`, sí.
+- [ ] **6.1** Shared types: `PaneTree`, `WorktreeLayout`, layout ops (`splitLeaf`, `mergeLeaf`, `assignSession`, `toggleAxis`, `pruneOrphans`). Settings `layoutByWt`.
+- [ ] **6.2** Main process: `PtyManager` + `shell-detect` + IPC + `electron-rebuild` postinstall + `probeNativeBindings`.
+- [ ] **6.3** Renderer Terminal: `useXterm` (xterm.js + fit + web-links) + `TerminalPanel` + `TerminalHeader`.
+- [ ] **6.4** `SplitContainer` + `WorktreeView` orquestador + `⌘\` hotkey + StatusBar Term button.
+- [ ] **6.5** `useWorktreeLayout` hook: persistencia debounced + ops sobre el árbol.
+- [ ] **6.6** `ChatPane` (per-leaf) + `PaneHeader` + `PaneDropTarget`.
+- [ ] **6.7** `ChatGrid` recursivo + refactor de `ChatPanel`.
+- [ ] **6.8** `SessionChip` draggable.
+- [ ] **6.9** `App.tsx` cablea layout + ops + hotkey terminal.
+- [ ] **6.10** Cleanup `before-quit`: PtyManager.killAll después de persistir sesiones.
+- [ ] **6.11** E2E specs (terminal toggle + chat split + drag-assign).
+- [ ] **6.12** Final audit + DoD checklist.
 
 ### Definition of Done
 
-- [ ] ⌘\ abre un terminal funcional en el worktree activo con cwd correcto.
-- [ ] Puedo correr `git status`, `pnpm test`, `vim README.md` (incluyendo apps interactivas con curses).
-- [ ] El terminal sobrevive a cambiar de tab y volver.
-- [ ] Theme dark/light se aplica al terminal.
+**Terminal:**
+- ⌘\ cicla orientación y persiste por worktree.
+- Comandos básicos funcionan (`git status`, `vim`, `ls --color`).
+- Cambiar tab y volver mantiene scrollback.
+- `⌘Q` no deja procesos zombie.
+
+**Chat split:**
+- Hasta 4 hojas con Composer/ApprovalBar/SessionMeta independientes.
+- Drag-and-drop desde SessionStrip mueve sesiones (no duplica).
+- Cerrar y reabrir restaura el árbol; orfanos limpiados.
+
+**Tooling:** `pnpm install` clean compila node-pty; suite full verde.
 
 ### Hand-off a Fase 7
 
-- Existe ya infraestructura de eventos main→renderer streaming (terminal:data) — Fase 7 reutiliza el patrón para `files:watch`.
+- `WorktreeView` + `SplitContainer` listos para añadir un tercer eje (visor de archivos).
+- Patrón `useXterm` con `ResizeObserver` reutilizable para Monaco/shiki.
+- `useWorktreeLayout` extensible: añadir `viewer: { open; path }` al schema sin tocar el core.
 
 ---
 
