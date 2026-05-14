@@ -125,15 +125,15 @@ describe('shared/project — type contract', () => {
     expectTypeOf(w.claude).toEqualTypeOf<ClaudeState>();
   });
 
-  it('Project carries id/name/path/worktrees', () => {
+  it('Project carries id/name/path/expanded', () => {
     const p: Project = {
       id: 'p1',
       name: 'jide',
       path: '/Users/x/code/jide',
       expanded: true,
-      worktrees: [],
     };
-    expectTypeOf(p.worktrees).toEqualTypeOf<Worktree[]>();
+    expectTypeOf(p.id).toEqualTypeOf<string>();
+    expectTypeOf(p.expanded).toEqualTypeOf<boolean>();
   });
 });
 

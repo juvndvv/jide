@@ -36,7 +36,6 @@ export function createProjectRegistry(store: JideStore): ProjectRegistry {
         name: basename(canonical),
         path: canonical,
         expanded: true,
-        worktrees: [],
       };
       store.set('projects', [...existing, project]);
       return Promise.resolve(project);
