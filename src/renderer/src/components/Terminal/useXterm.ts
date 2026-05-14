@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import { WebLinksAddon } from '@xterm/addon-web-links';
@@ -85,9 +85,9 @@ export function useXterm({
     termRef.current.options.theme = xtermTheme(theme, accent);
   }, [theme, accent]);
 
-  const writeChunk = (data: string): void => {
+  const writeChunk = useCallback((data: string): void => {
     termRef.current?.write(data);
-  };
+  }, []);
 
   return { writeChunk };
 }

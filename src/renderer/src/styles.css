@@ -49,6 +49,3 @@ body {
   padding: 6px 8px;
   height: 100%;
 }
-.xterm-viewport {
-  overflow-y: auto;
-}
