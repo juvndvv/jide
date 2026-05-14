@@ -7,7 +7,7 @@
 | Fase | Estado | Plan ejecutable |
 |---|---|---|
 | 1 — App skeleton | ✅ Mergeable (PR #1) | `.planning/plans/2026-05-14-fase-1-app-skeleton.md` |
-| 2 — Proyectos & worktrees | 🗒 Outline | — |
+| 2 — Proyectos & worktrees | 📝 Plan listo | `.planning/plans/2026-05-14-fase-2-proyectos-worktrees.md` |
 | 3 — Sesión Claude end-to-end | 🗒 Outline | — |
 | 4 — Multi-sesión por worktree | 🗒 Outline | — |
 | 5 — Tabs + UI shell | 🗒 Outline | — |
