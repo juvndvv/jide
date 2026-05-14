@@ -2,7 +2,7 @@
   "name": "jide",
   "version": "0.1.0",
   "private": true,
-  "description": "Centro de mando para Claude Code",
+  "description": "Command center for Claude Code",
   "author": "Juan Daniel Forner Garriga <dani@jotade.io>",
   "main": "out/main/index.js",
   "type": "module",

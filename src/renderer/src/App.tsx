@@ -8,6 +8,7 @@ export function App() {
     void window.jide.settings.get('theme').then(setTheme);
   }, []);
 
+  // TODO(phase-5): replace this temporary theme-toggle demo with the real Tweaks panel.
   const cycle = async () => {
     const order: ThemeMode[] = ['auto', 'light', 'dark'];
     const next = order[(order.indexOf(theme ?? 'auto') + 1) % order.length] ?? 'auto';
@@ -38,6 +39,7 @@ export function App() {
       >
         jide
       </h1>
+      {/* TODO(phase-5): swap for real Tweaks panel; this button is only here to prove the settings IPC roundtrip works. */}
       <button
         type="button"
         data-testid="theme-toggle"
