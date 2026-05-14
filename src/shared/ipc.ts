@@ -3,7 +3,7 @@ import type { SettingsKey, SettingsSchema } from './settings.js';
 export const CHANNELS = ['ping', 'settings:get', 'settings:set'] as const;
 export type Channel = (typeof CHANNELS)[number];
 
-export interface ChannelMap {
+export type ChannelMap = {
   ping: { req: void; res: string };
   'settings:get': {
     req: { key: SettingsKey };
@@ -13,7 +13,7 @@ export interface ChannelMap {
     req: { [K in SettingsKey]: { key: K; value: SettingsSchema[K] } }[SettingsKey];
     res: void;
   };
-}
+};
 
 export type Req<C extends Channel> = ChannelMap[C]['req'];
 export type Res<C extends Channel> = ChannelMap[C]['res'];
