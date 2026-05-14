@@ -1,10 +1,15 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 type IconName =
+  | 'arrow-down'
+  | 'arrow-up'
   | 'branch'
   | 'chev-d'
   | 'chev-r'
+  | 'claude'
+  | 'cli'
   | 'command'
+  | 'diff'
   | 'folder'
   | 'folder-open'
   | 'plus'
@@ -12,12 +17,27 @@ type IconName =
   | 'settings'
   | 'x';
 
-const PATHS: Record<IconName, string> = {
+const SHAPES: Record<IconName, ReactNode> = {
+  'arrow-down': <path d="M12 5v14M5 12l7 7 7-7" />,
+  'arrow-up': <path d="M12 19V5M5 12l7-7 7 7" />,
   branch:
     'M6 3a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm0 14a2 2 0 1 1 0 4 2 2 0 0 1 0-4Zm12-10a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM6 9v6m12-4a8 8 0 0 1-8 8',
   'chev-d': 'M6 9l6 6 6-6',
   'chev-r': 'M9 6l6 6-6 6',
+  claude: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M8 9c0 5 4 7 8 7M16 9c0 5-4 7-8 7" />
+    </>
+  ),
+  cli: <path d="m4 7 5 5-5 5M12 17h8" />,
   command: 'M9 3a3 3 0 1 1 3 3v12a3 3 0 1 1-3-3h6a3 3 0 1 1-3 3V6a3 3 0 1 1 3 3',
+  diff: (
+    <>
+      <path d="M11 4v6h6M13 20v-6H7" />
+      <path d="m7 10 4-6M17 14l-4 6" />
+    </>
+  ),
   folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z',
   'folder-open': 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2H5l-2 9V7Z',
   plus: 'M12 5v14M5 12h14',
@@ -29,6 +49,15 @@ const PATHS: Record<IconName, string> = {
 };
 
 const FILLED = new Set<IconName>(['search', 'folder', 'folder-open']);
+
+function resolveChildren(name: IconName, color: string): ReactNode {
+  const shape = SHAPES[name];
+  if (typeof shape === 'string') {
+    const filled = FILLED.has(name);
+    return <path d={shape} fill={filled ? color : 'none'} />;
+  }
+  return shape;
+}
 
 export function JIcon({
   name,
@@ -43,8 +72,7 @@ export function JIcon({
   stroke?: number;
   style?: CSSProperties;
 }) {
-  const d = PATHS[name];
-  const filled = FILLED.has(name);
+  const filled = typeof SHAPES[name] === 'string' && FILLED.has(name);
   return (
     <svg
       width={size}
@@ -57,7 +85,7 @@ export function JIcon({
       strokeLinejoin="round"
       style={{ flexShrink: 0, ...style }}
     >
-      <path d={d} />
+      {resolveChildren(name, color)}
     </svg>
   );
 }
