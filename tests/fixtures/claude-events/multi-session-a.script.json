@@ -18,14 +18,14 @@
     "event": {
       "type": "assistant",
       "message": {
-        "id": "msg_e2e_1",
+        "id": "msg_multi_a_1",
         "type": "message",
         "role": "assistant",
         "model": "claude-haiku-4-5-20251001",
         "content": [
           {
             "type": "text",
-            "text": "Hello from fake-claude in E2E."
+            "text": "Reply from session A."
           }
         ],
         "stop_reason": null
@@ -42,7 +42,7 @@
       "total_cost_usd": 0,
       "num_turns": 1,
       "stop_reason": "end_turn",
-      "result": "Hello from fake-claude in E2E."
+      "result": "Reply from session A."
     }
   },
   { "kind": "echo-stdin", "expect": "user" }

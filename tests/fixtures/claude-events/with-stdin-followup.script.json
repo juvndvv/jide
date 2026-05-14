@@ -5,7 +5,6 @@
     "event": {
       "type": "system",
       "subtype": "init",
-      "session_id": "fake-1",
       "cwd": "/tmp/fake",
       "model": "haiku"
     }
@@ -41,7 +40,6 @@
     "event": {
       "type": "system",
       "subtype": "init",
-      "session_id": "fake-1",
       "cwd": "/tmp/fake",
       "model": "haiku"
     }
