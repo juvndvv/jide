@@ -7,6 +7,9 @@ export function registerProjects(registry: ProjectRegistry): void {
   createHandler('projects:list', () => Promise.resolve(registry.list()));
 
   createHandler('projects:add', async () => {
+    // JIDE_TEST_DIALOG_RETURN bypasses the native dialog for E2E tests.
+    // undefined = run the real dialog; '' = simulate cancellation; any other
+    // string = treat it as the chosen path. Production code never sets it.
     const testPath = process.env.JIDE_TEST_DIALOG_RETURN;
     let chosen: string | undefined;
     if (testPath !== undefined) {
