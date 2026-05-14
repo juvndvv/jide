@@ -1,5 +1,6 @@
 import type { SettingsKey, SettingsSchema } from './settings.js';
 import type { Project, Worktree } from './project.js';
+import type { SessionSnapshot } from './session.js';
 
 export const CHANNELS = [
   'ping',
@@ -12,6 +13,11 @@ export const CHANNELS = [
   'worktrees:list-branches',
   'worktrees:add',
   'worktrees:remove',
+  'sessions:start',
+  'sessions:send',
+  'sessions:kill',
+  'sessions:approve-tool',
+  'sessions:get',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
@@ -35,6 +41,14 @@ export type ChannelMap = {
     res: Worktree;
   };
   'worktrees:remove': { req: { projectId: string; worktreePath: string }; res: void };
+  'sessions:start': { req: { worktreeId: string }; res: SessionSnapshot };
+  'sessions:send': { req: { worktreeId: string; text: string }; res: void };
+  'sessions:kill': { req: { worktreeId: string }; res: void };
+  'sessions:approve-tool': {
+    req: { worktreeId: string; toolUseId: string; allow: boolean; reason?: string };
+    res: void;
+  };
+  'sessions:get': { req: { worktreeId: string }; res: SessionSnapshot | null };
 };
 
 export type Req<C extends Channel> = ChannelMap[C]['req'];
@@ -44,6 +58,7 @@ export const EVENTS = [
   'projects:changed',
   'worktrees:status-changed',
   'worktrees:changed',
+  'sessions:event',
 ] as const;
 export type Event = (typeof EVENTS)[number];
 
@@ -51,6 +66,7 @@ export type EventMap = {
   'projects:changed': Project[];
   'worktrees:status-changed': { projectId: string; worktree: Worktree };
   'worktrees:changed': { projectId: string; worktrees: Worktree[] };
+  'sessions:event': { worktreeId: string; snapshot: SessionSnapshot };
 };
 
 export type EventPayload<E extends Event> = EventMap[E];
@@ -74,6 +90,18 @@ export interface JideApi {
       args: { branch: string; baseBranch?: string; path: string },
     ) => Promise<Worktree>;
     remove: (projectId: string, worktreePath: string) => Promise<void>;
+  };
+  sessions: {
+    start: (worktreeId: string) => Promise<SessionSnapshot>;
+    send: (worktreeId: string, text: string) => Promise<void>;
+    kill: (worktreeId: string) => Promise<void>;
+    approveTool: (
+      worktreeId: string,
+      toolUseId: string,
+      allow: boolean,
+      reason?: string,
+    ) => Promise<void>;
+    get: (worktreeId: string) => Promise<SessionSnapshot | null>;
   };
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void;
 }
