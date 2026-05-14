@@ -1,69 +1,130 @@
 import { EventEmitter } from 'node:events';
-import type { SessionSnapshot } from '@shared/session';
 import { ClaudeSession, type ClaudeSessionOptions } from './session.js';
+import type { PersistedSession, SessionSnapshot } from '@shared/session';
 
-/**
- * Phase 3 invariant: at most one ClaudeSession per worktree.
- * The internal Map already supports `ClaudeSession[]` so Phase 4 only
- * has to lift the cap.
- */
+export interface SessionManagerOptions {
+  /** Configurable cap. SessionManager clamps to [1, 16]. */
+  maxSessionsPerWorktree: number;
+}
+
 export class SessionManager extends EventEmitter {
   private readonly sessionsByWt = new Map<string, ClaudeSession[]>();
+  private maxPerWt: number;
+
+  constructor(opts: SessionManagerOptions = { maxSessionsPerWorktree: 4 }) {
+    super();
+    this.maxPerWt = clamp(opts.maxSessionsPerWorktree);
+  }
+
+  /** Update the cap at runtime. Does NOT kill existing sessions over the new cap. */
+  setMaxPerWorktree(n: number): void {
+    this.maxPerWt = clamp(n);
+  }
+
+  getMaxPerWorktree(): number {
+    return this.maxPerWt;
+  }
 
   /**
-   * Return the existing session for this worktree, or create one. The
-   * returned session is NOT started — call session.start() (or
-   * session.send(prompt)) on it to actually spawn the CLI.
+   * Create a new session for the worktree. Returns the new ClaudeSession.
+   * Throws SessionCapReachedError when the cap is reached.
    */
-  startForWorktree(opts: ClaudeSessionOptions): ClaudeSession {
-    const existing = this.sessionsByWt.get(opts.worktreeId) ?? [];
-    if (existing.length >= 1) {
-      const current = existing[0];
-      if (current) return current;
+  createForWorktree(opts: ClaudeSessionOptions): ClaudeSession {
+    const list = this.sessionsByWt.get(opts.worktreeId) ?? [];
+    if (list.length >= this.maxPerWt) {
+      throw new SessionCapReachedError(opts.worktreeId, this.maxPerWt);
     }
-    const session = new ClaudeSession(opts);
-    session.on('snapshot', (snap: SessionSnapshot) => this.emit('snapshot', snap));
-    session.on('exit', () => {
-      const list = this.sessionsByWt.get(opts.worktreeId);
-      if (!list) return;
-      const i = list.indexOf(session);
-      if (i >= 0) list.splice(i, 1);
-      if (list.length === 0) this.sessionsByWt.delete(opts.worktreeId);
-    });
-    this.sessionsByWt.set(opts.worktreeId, [...existing, session]);
+    const session = this.wire(opts);
+    this.sessionsByWt.set(opts.worktreeId, [...list, session]);
+    this.emitList(opts.worktreeId);
     return session;
   }
 
-  getForWorktree(worktreeId: string): ClaudeSession | null {
-    return this.sessionsByWt.get(worktreeId)?.[0] ?? null;
-  }
-
-  snapshotForWorktree(worktreeId: string): SessionSnapshot | null {
-    return this.getForWorktree(worktreeId)?.snapshot() ?? null;
-  }
-
-  killForWorktree(worktreeId: string): void {
-    const list = this.sessionsByWt.get(worktreeId);
-    if (!list) return;
-    for (const s of list) s.kill();
-    // Map cleanup happens in the session 'exit' listener — deleting eagerly
-    // here would race a follow-up startForWorktree against a still-terminating
-    // child.
-  }
-
   /**
-   * Kill all sessions. Called from app.before-quit to prevent zombies.
-   * Idempotent.
+   * Rehydrate a previously persisted session. Bypasses the cap so the
+   * user does not lose history if maxPerWorktree was lowered between
+   * runs.
    */
+  rehydrate(opts: ClaudeSessionOptions & { seed: PersistedSession }): ClaudeSession {
+    const list = this.sessionsByWt.get(opts.worktreeId) ?? [];
+    const session = this.wire(opts);
+    this.sessionsByWt.set(opts.worktreeId, [...list, session]);
+    this.emitList(opts.worktreeId);
+    return session;
+  }
+
+  getById(worktreeId: string, sessionUuid: string): ClaudeSession | null {
+    const list = this.sessionsByWt.get(worktreeId);
+    if (!list) return null;
+    return list.find((s) => s.snapshot().id.uuid === sessionUuid) ?? null;
+  }
+
+  listForWorktree(worktreeId: string): ClaudeSession[] {
+    return this.sessionsByWt.get(worktreeId) ?? [];
+  }
+
+  snapshotsForWorktree(worktreeId: string): SessionSnapshot[] {
+    return this.listForWorktree(worktreeId).map((s) => s.snapshot());
+  }
+
+  killById(worktreeId: string, sessionUuid: string): void {
+    const session = this.getById(worktreeId, sessionUuid);
+    if (session) session.kill();
+  }
+
   killAll(): void {
     for (const list of this.sessionsByWt.values()) {
       for (const s of list) s.kill();
     }
-    // Same race note as killForWorktree — Map entries clean up on exit.
   }
 
   /** For tests: list active worktree ids. */
   activeWorktrees(): string[] {
     return [...this.sessionsByWt.keys()];
   }
+
+  private drop(worktreeId: string, session: ClaudeSession): void {
+    const list = this.sessionsByWt.get(worktreeId);
+    if (!list) return;
+    const i = list.indexOf(session);
+    if (i >= 0) list.splice(i, 1);
+    if (list.length === 0) this.sessionsByWt.delete(worktreeId);
+    this.emitList(worktreeId);
+  }
+
+  private wire(opts: ClaudeSessionOptions): ClaudeSession {
+    const session = new ClaudeSession(opts);
+    session.on('snapshot', (snap: SessionSnapshot) => {
+      this.emit('snapshot', snap);
+      this.emit('list-changed', {
+        worktreeId: opts.worktreeId,
+        sessions: this.snapshotsForWorktree(opts.worktreeId),
+      });
+    });
+    session.on('exit', () => this.drop(opts.worktreeId, session));
+    return session;
+  }
+
+  private emitList(worktreeId: string): void {
+    this.emit('list-changed', {
+      worktreeId,
+      sessions: this.snapshotsForWorktree(worktreeId),
+    });
+  }
+}
+
+export class SessionCapReachedError extends Error {
+  readonly code = 'SESSION_CAP_REACHED' as const;
+  readonly worktreeId: string;
+  readonly cap: number;
+  constructor(worktreeId: string, cap: number) {
+    super(`Session cap reached for worktree ${worktreeId} (max ${cap})`);
+    this.worktreeId = worktreeId;
+    this.cap = cap;
+  }
+}
+
+function clamp(n: number): number {
+  if (!Number.isFinite(n)) return 4;
+  return Math.max(1, Math.min(16, Math.round(n)));
 }

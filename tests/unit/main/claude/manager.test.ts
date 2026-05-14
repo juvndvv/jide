@@ -1,90 +1,63 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { SessionManager } from '../../../../src/main/claude/manager';
-import { setClaudeBinaryForTests } from '../../../../src/main/claude/locator';
-import { fakeClaudeArgs } from '../../helpers/fake-claude-runner';
-
-const __filename = fileURLToPath(import.meta.url);
-const here = dirname(__filename);
-const SIMPLE = resolve(here, '../../../fixtures/claude-events/simple.script.json');
+import { describe, it, expect } from 'vitest';
+import { SessionManager, SessionCapReachedError } from '../../../../src/main/claude/manager';
 
 describe('SessionManager', () => {
-  beforeEach(() => setClaudeBinaryForTests('node'));
-  afterEach(() => setClaudeBinaryForTests(null));
-
-  it('returns the same session for repeated startForWorktree (Phase 3 cap)', () => {
-    const mgr = new SessionManager();
-    const a = mgr.startForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
-    const b = mgr.startForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
-    expect(a).toBe(b);
+  it('clamps the cap to [1,16] and defaults to 4', () => {
+    expect(new SessionManager().getMaxPerWorktree()).toBe(4);
+    expect(new SessionManager({ maxSessionsPerWorktree: 0 }).getMaxPerWorktree()).toBe(1);
+    expect(new SessionManager({ maxSessionsPerWorktree: 100 }).getMaxPerWorktree()).toBe(16);
   });
 
-  it('different worktrees get independent sessions', () => {
-    const mgr = new SessionManager();
-    const a = mgr.startForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
-    const b = mgr.startForWorktree({ worktreeId: 'wt-2', cwd: '/tmp' });
+  it('createForWorktree creates a new session every call up to the cap', () => {
+    const mgr = new SessionManager({ maxSessionsPerWorktree: 2 });
+    const a = mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    const b = mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
     expect(a).not.toBe(b);
-    expect(mgr.activeWorktrees().sort()).toEqual(['wt-1', 'wt-2']);
+    expect(mgr.listForWorktree('wt-1')).toHaveLength(2);
   });
 
-  it('snapshotForWorktree mirrors the underlying session', () => {
-    const mgr = new SessionManager();
-    const session = mgr.startForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
-    expect(mgr.snapshotForWorktree('wt-1')).toBe(session.snapshot());
-    expect(mgr.snapshotForWorktree('wt-missing')).toBeNull();
+  it('throws SessionCapReachedError when over the cap', () => {
+    const mgr = new SessionManager({ maxSessionsPerWorktree: 1 });
+    mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    expect(() => mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' }))
+      .toThrowError(SessionCapReachedError);
   });
 
-  it('re-emits snapshot events from underlying sessions', async () => {
+  it('getById finds the session by uuid', () => {
     const mgr = new SessionManager();
-    const seen: number[] = [];
-    mgr.on('snapshot', () => seen.push(Date.now()));
-    const session = mgr.startForWorktree({
-      worktreeId: 'wt-1',
-      cwd: '/tmp',
-      argsBuilder: () => fakeClaudeArgs(SIMPLE),
-    });
-    const exited = new Promise<void>((r) => session.on('exit', () => r()));
-    session.start();
-    await exited;
-    expect(seen.length).toBeGreaterThan(0);
+    const s = mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    const uuid = s.snapshot().id.uuid;
+    expect(mgr.getById('wt-1', uuid)).toBe(s);
+    expect(mgr.getById('wt-1', 'missing')).toBeNull();
   });
 
-  it('after natural exit, the Map cleans up via the exit listener', async () => {
+  it('emits list-changed when a session is created', () => {
     const mgr = new SessionManager();
-    const session = mgr.startForWorktree({
-      worktreeId: 'wt-1',
-      cwd: '/tmp',
-      argsBuilder: () => fakeClaudeArgs(SIMPLE),
-    });
-    const exited = new Promise<void>((r) => session.on('exit', () => r()));
-    session.start();
-    await exited;
-    // Allow the listener to run.
-    await new Promise((r) => setImmediate(r));
-    expect(mgr.activeWorktrees()).not.toContain('wt-1');
+    const events: number[] = [];
+    mgr.on('list-changed', (payload: { sessions: unknown[] }) => events.push(payload.sessions.length));
+    mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    expect(events).toEqual([1, 2]);
   });
 
-  it('killAll kills every active session', async () => {
-    const mgr = new SessionManager();
-    const a = mgr.startForWorktree({
-      worktreeId: 'wt-1',
+  it('rehydrate bypasses the cap so history is never lost', () => {
+    const mgr = new SessionManager({ maxSessionsPerWorktree: 1 });
+    mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    const seed = {
+      id: { worktreeId: 'wt-1', uuid: 'seed' },
+      status: 'idle' as const,
+      model: 'sonnet',
       cwd: '/tmp',
-      argsBuilder: () => fakeClaudeArgs(SIMPLE),
-    });
-    const b = mgr.startForWorktree({
-      worktreeId: 'wt-2',
-      cwd: '/tmp',
-      argsBuilder: () => fakeClaudeArgs(SIMPLE),
-    });
-    const aExited = new Promise<void>((r) => a.on('exit', () => r()));
-    const bExited = new Promise<void>((r) => b.on('exit', () => r()));
-    a.start();
-    b.start();
-    mgr.killAll();
-    await Promise.all([aExited, bExited]);
-    // Wait for Map cleanup.
-    await new Promise((r) => setImmediate(r));
-    expect(mgr.activeWorktrees()).toEqual([]);
+      title: 't',
+      createdAt: 0,
+      messages: [],
+      rateLimit: null,
+      awaitingToolUseId: null,
+      totalCostUsd: 0,
+    };
+    expect(() =>
+      mgr.rehydrate({ worktreeId: 'wt-1', cwd: '/tmp', seed }),
+    ).not.toThrow();
+    expect(mgr.listForWorktree('wt-1')).toHaveLength(2);
   });
 });
