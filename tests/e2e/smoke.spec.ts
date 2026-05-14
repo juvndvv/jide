@@ -7,3 +7,10 @@ test('app boots and opens a window titled "jide"', async () => {
   await expect(window).toHaveTitle('jide');
   await app.close();
 });
+
+test('renderer shows jide wordmark', async () => {
+  const app = await launchJide();
+  const window = await app.firstWindow();
+  await expect(window.getByTestId('wordmark')).toHaveText('jide');
+  await app.close();
+});
