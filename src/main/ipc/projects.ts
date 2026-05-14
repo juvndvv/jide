@@ -3,7 +3,7 @@ import { createHandler } from './register.js';
 import { sendEvent } from './events.js';
 import type { ProjectRegistry } from '../projects/index.js';
 
-export function registerProjects(registry: ProjectRegistry): void {
+export function registerProjects(registry: ProjectRegistry, afterMutation: () => void): void {
   createHandler('projects:list', () => Promise.resolve(registry.list()));
 
   createHandler('projects:add', async () => {
@@ -32,12 +32,14 @@ export function registerProjects(registry: ProjectRegistry): void {
     if (!chosen) return null;
     const project = await registry.add(chosen);
     sendEvent('projects:changed', registry.list());
+    afterMutation();
     return project;
   });
 
   createHandler('projects:remove', ({ id }) => {
     registry.remove(id);
     sendEvent('projects:changed', registry.list());
+    afterMutation();
     return Promise.resolve();
   });
 }
