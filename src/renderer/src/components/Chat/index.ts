@@ -5,3 +5,7 @@ export { ToolMessage } from './ToolMessage';
 export { DiffMessage } from './DiffMessage';
 export { SystemMessage } from './SystemMessage';
 export { StreamingIndicator } from './StreamingIndicator';
+export { Composer } from './Composer';
+export { ApprovalBar } from './ApprovalBar';
+export type { ComposerProps } from './Composer';
+export type { ApprovalBarProps } from './ApprovalBar';
