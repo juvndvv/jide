@@ -5,11 +5,8 @@
     "event": {
       "type": "system",
       "subtype": "init",
-      "session_id": "fake-cli-greeting",
       "cwd": "/tmp/fake",
-      "model": "claude-haiku-4-5-20251001",
-      "tools": ["Bash", "Read", "Edit"],
-      "permissionMode": "default"
+      "model": "claude-haiku-4-5-20251001"
     }
   },
   { "kind": "echo-stdin", "expect": "user" },
@@ -19,16 +16,11 @@
     "event": {
       "type": "assistant",
       "message": {
-        "id": "msg_e2e_1",
+        "id": "msg_kill_1",
         "type": "message",
         "role": "assistant",
         "model": "claude-haiku-4-5-20251001",
-        "content": [
-          {
-            "type": "text",
-            "text": "Hello from fake-claude in E2E."
-          }
-        ],
+        "content": [{ "type": "text", "text": "First turn response." }],
         "stop_reason": null
       }
     }
@@ -43,8 +35,9 @@
       "total_cost_usd": 0,
       "num_turns": 1,
       "stop_reason": "end_turn",
-      "result": "Hello from fake-claude in E2E."
+      "result": "First turn response."
     }
   },
+  { "kind": "echo-stdin", "expect": "user" },
   { "kind": "echo-stdin", "expect": "user" }
 ]

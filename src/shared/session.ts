@@ -72,6 +72,10 @@ export interface SessionSnapshot {
   status: SessionStatus;
   model: string;
   cwd: string;
+  /** Inferred from the first user prompt, or user-renamed. Defaults to "Sesión N" until a prompt arrives. */
+  title: string;
+  /** Unix ms when the session was first created in this jide installation. Stable across rehydrations. */
+  createdAt: number;
   messages: Message[];
   /** Set when the most recent rate_limit_event indicated a warning or exceeded state. */
   rateLimit: RateLimitInfo | null;
@@ -80,3 +84,11 @@ export interface SessionSnapshot {
   /** From the CLI result event, accumulated across turns. */
   totalCostUsd: number;
 }
+
+/**
+ * Shape persisted in electron-store under `sessions[worktreeId][]`.
+ * Strictly a superset of SessionSnapshot — adds nothing today but
+ * pinned as its own type so a future schema version (e.g. adding
+ * `messagesCompressed`) doesn't leak into the runtime contract.
+ */
+export type PersistedSession = SessionSnapshot;

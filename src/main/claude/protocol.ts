@@ -132,7 +132,6 @@ export function applyEvent(prev: SessionSnapshot, event: StreamEvent): SessionSn
           status: nextStatus,
           model: event.model ?? prev.model,
           cwd: event.cwd ?? prev.cwd,
-          id: { ...prev.id, uuid: event.session_id ?? prev.id.uuid },
         };
       }
       if (event.subtype === 'status') {
@@ -270,6 +269,8 @@ export function emptySnapshot(worktreeId: string, model: string, cwd: string): S
     status: 'idle',
     model,
     cwd,
+    title: '',
+    createdAt: Date.now(),
     messages: [],
     rateLimit: null,
     awaitingToolUseId: null,

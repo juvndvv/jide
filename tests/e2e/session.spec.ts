@@ -8,7 +8,7 @@ import { launchJide } from './helpers/launch';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const GREETING_SCRIPT = resolve(here, '../fixtures/claude-events/e2e-greeting.script.json');
-const FOLLOWUP_SCRIPT = resolve(here, '../fixtures/claude-events/with-stdin-followup.script.json');
+const KILL_HANGS_SCRIPT = resolve(here, '../fixtures/claude-events/e2e-kill-hangs.script.json');
 
 function initRepo(): string {
   const dir = mkdtempSync(join(tmpdir(), 'jide-e2e-session-'));
@@ -39,6 +39,12 @@ test('session: select worktree → send prompt → see claude response from fake
   await page.getByTestId('worktree-main').click();
   await expect(page.getByTestId('chat-panel')).toBeVisible();
 
+  // Phase 4: the worktree starts with zero sessions — create one via the CTA
+  // before the composer becomes reachable.
+  await expect(page.getByTestId('empty-sessions')).toBeVisible();
+  await page.getByTestId('empty-sessions-cta').click();
+  await expect(page.getByTestId('session-strip')).toBeVisible();
+
   const composer = page.getByTestId('composer-input');
   await composer.fill('Hello, fake-claude!');
   await composer.press('Enter');
@@ -61,7 +67,7 @@ test('session: kill button terminates a hanging session', async () => {
   const app = await launchJide({
     dialogReturnPath: repoDir,
     storeCwd,
-    fakeClaudeScript: FOLLOWUP_SCRIPT,
+    fakeClaudeScript: KILL_HANGS_SCRIPT,
   });
   const page = await app.firstWindow();
 
@@ -70,6 +76,11 @@ test('session: kill button terminates a hanging session', async () => {
 
   await page.getByTestId('worktree-main').click();
   await expect(page.getByTestId('chat-panel')).toBeVisible();
+
+  // Phase 4: create the initial session via the EmptyState CTA.
+  await expect(page.getByTestId('empty-sessions')).toBeVisible();
+  await page.getByTestId('empty-sessions-cta').click();
+  await expect(page.getByTestId('session-strip')).toBeVisible();
 
   await page.getByTestId('composer-input').fill('hello');
   await page.getByTestId('composer-input').press('Enter');
@@ -90,7 +101,12 @@ test('session: kill button terminates a hanging session', async () => {
 
   await page.getByTestId('chat-kill').click();
 
-  await expect(page.getByTestId('chat-status')).toHaveText(/exited|error/i, { timeout: 5000 });
+  // Phase 4: the manager drops a session when its process exits, so the chip
+  // disappears once the kill takes effect and EmptySessions reappears.
+  await expect(page.locator('[role="tab"][data-testid^="session-chip-"]')).toHaveCount(0, {
+    timeout: 5000,
+  });
+  await expect(page.getByTestId('empty-sessions')).toBeVisible();
 
   await app.close();
   rmSync(repoDir, { recursive: true, force: true });

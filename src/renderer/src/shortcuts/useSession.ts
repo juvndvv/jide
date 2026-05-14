@@ -8,22 +8,17 @@ export interface UseSession {
   approveTool: (toolUseId: string, allow: boolean, reason?: string) => Promise<void>;
 }
 
-/**
- * Subscribes to sessions:event for the given worktreeId. Returns null
- * when worktreeId is null (no selection). Starts a session lazily on
- * the first send() call — start() is implicit inside the IPC handler.
- */
-export function useSession(worktreeId: string | null): UseSession {
+export function useSession(worktreeId: string | null, sessionId: string | null): UseSession {
   const [snapshot, setSnapshot] = useState<SessionSnapshot | null>(null);
 
   useEffect(() => {
-    if (!worktreeId) {
+    if (!worktreeId || !sessionId) {
       setSnapshot(null);
       return;
     }
     let alive = true;
     window.jide.sessions
-      .get(worktreeId)
+      .get(worktreeId, sessionId)
       .then((s) => {
         if (alive) setSnapshot(s);
       })
@@ -32,33 +27,34 @@ export function useSession(worktreeId: string | null): UseSession {
       });
     const off = window.jide.on('sessions:event', (payload) => {
       if (payload.worktreeId !== worktreeId) return;
+      if (payload.snapshot.id.uuid !== sessionId) return;
       setSnapshot(payload.snapshot);
     });
     return () => {
       alive = false;
       off();
     };
-  }, [worktreeId]);
+  }, [worktreeId, sessionId]);
 
   const send = useCallback(
     async (text: string): Promise<void> => {
-      if (!worktreeId) return;
-      await window.jide.sessions.send(worktreeId, text);
+      if (!worktreeId || !sessionId) return;
+      await window.jide.sessions.send(worktreeId, sessionId, text);
     },
-    [worktreeId],
+    [worktreeId, sessionId],
   );
 
   const kill = useCallback(async (): Promise<void> => {
-    if (!worktreeId) return;
-    await window.jide.sessions.kill(worktreeId);
-  }, [worktreeId]);
+    if (!worktreeId || !sessionId) return;
+    await window.jide.sessions.kill(worktreeId, sessionId);
+  }, [worktreeId, sessionId]);
 
   const approveTool = useCallback(
     async (toolUseId: string, allow: boolean, reason?: string): Promise<void> => {
-      if (!worktreeId) return;
-      await window.jide.sessions.approveTool(worktreeId, toolUseId, allow, reason);
+      if (!worktreeId || !sessionId) return;
+      await window.jide.sessions.approveTool(worktreeId, sessionId, toolUseId, allow, reason);
     },
-    [worktreeId],
+    [worktreeId, sessionId],
   );
 
   return { snapshot, send, kill, approveTool };

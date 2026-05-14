@@ -2,9 +2,10 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { createInterface, type Interface as ReadlineInterface } from 'node:readline';
 import { EventEmitter } from 'node:events';
 import { randomUUID } from 'node:crypto';
-import type { SessionId, SessionSnapshot } from '@shared/session';
+import type { PersistedSession, SessionId, SessionSnapshot } from '@shared/session';
 import { applyEvent, emptySnapshot, parseEventLine } from './protocol.js';
 import { claudeBinary } from './locator.js';
+import { inferTitle } from './title.js';
 
 export interface ClaudeSessionOptions {
   worktreeId: string;
@@ -16,6 +17,8 @@ export interface ClaudeSessionOptions {
    * the spawn binary stays `node` (set via setClaudeBinaryForTests).
    */
   argsBuilder?: (sessionUuid: string, model: string) => string[];
+  /** When provided, the session boots in a rehydrated state with the prior snapshot. */
+  seed?: PersistedSession;
 }
 
 /**
@@ -24,21 +27,22 @@ export interface ClaudeSessionOptions {
  * (required alongside -p), bypassPermissions for MVP, pinned session id.
  * --include-partial-messages is intentionally absent.
  */
-function defaultArgs(sessionUuid: string, model: string): string[] {
-  return [
+function defaultArgs(sessionUuid: string, model: string, resume: boolean): string[] {
+  const base = [
     '-p',
     '--verbose',
     '--output-format',
     'stream-json',
     '--input-format',
     'stream-json',
-    '--session-id',
-    sessionUuid,
     '--model',
     model,
     '--permission-mode',
     'bypassPermissions',
   ];
+  if (resume) base.push('--resume', sessionUuid);
+  else base.push('--session-id', sessionUuid);
+  return base;
 }
 
 /**
@@ -55,6 +59,10 @@ export class ClaudeSession extends EventEmitter {
   private snapshotState: SessionSnapshot;
   private proc: ChildProcess | null = null;
   private rl: ReadlineInterface | null = null;
+  // True when the session was constructed from a persisted seed and has not
+  // yet spawned its first CLI process. Switches `start()` to --resume <uuid>
+  // and prevents the post-exit identity refresh from minting a new uuid.
+  private rehydrated = false;
   // True once the underlying process has exited (naturally or via kill). Gates
   // send() and handleLine() so late stdout / accidental sends cannot mutate
   // the final snapshot or silently respawn a new CLI with a new session-id.
@@ -69,12 +77,20 @@ export class ClaudeSession extends EventEmitter {
   constructor(opts: ClaudeSessionOptions) {
     super();
     this.opts = opts;
-    this.model = opts.model ?? 'sonnet';
-    this.sessionId = { worktreeId: opts.worktreeId, uuid: randomUUID() };
-    this.snapshotState = {
-      ...emptySnapshot(opts.worktreeId, this.model, opts.cwd),
-      id: this.sessionId,
-    };
+    if (opts.seed) {
+      this.model = opts.seed.model;
+      this.sessionId = opts.seed.id;
+      this.snapshotState = opts.seed;
+      this.terminated = true;
+      this.rehydrated = true;
+    } else {
+      this.model = opts.model ?? 'sonnet';
+      this.sessionId = { worktreeId: opts.worktreeId, uuid: randomUUID() };
+      this.snapshotState = {
+        ...emptySnapshot(opts.worktreeId, this.model, opts.cwd),
+        id: this.sessionId,
+      };
+    }
   }
 
   snapshot(): SessionSnapshot {
@@ -87,12 +103,16 @@ export class ClaudeSession extends EventEmitter {
     // Re-start after a natural exit: refresh identity and clear the terminal
     // flag so handleLine and send work again. A fresh UUID is intentional —
     // the CLI session is gone; this is a brand-new conversation.
-    if (this.terminated) {
+    // Exception: a rehydrated session must keep its seeded uuid and snapshot
+    // so the very first spawn can hand them to `claude --resume`.
+    if (this.terminated && !this.rehydrated) {
       this.sessionId = { worktreeId: this.opts.worktreeId, uuid: randomUUID() };
       this.snapshotState = {
         ...emptySnapshot(this.opts.worktreeId, this.model, this.opts.cwd),
         id: this.sessionId,
       };
+      this.terminated = false;
+    } else if (this.terminated) {
       this.terminated = false;
     }
     // E2E test seam: when both env vars are set, bypass the real CLI args
@@ -107,13 +127,17 @@ export class ClaudeSession extends EventEmitter {
         env: { ...process.env },
       });
     } else {
-      const builder = this.opts.argsBuilder ?? defaultArgs;
+      const resume = this.rehydrated;
+      const builder = this.opts.argsBuilder ?? ((uuid, model) => defaultArgs(uuid, model, resume));
       const args = builder(this.sessionId.uuid, this.model);
       this.proc = spawn(claudeBinary(), args, {
         cwd: this.opts.cwd,
         stdio: ['pipe', 'pipe', 'pipe'],
         env: { ...process.env },
       });
+      // Clear after spawn so a future kill→start cycle falls back to
+      // --session-id semantics on whatever uuid is current at that point.
+      this.rehydrated = false;
     }
     this.updateSnapshot({ ...this.snapshotState, status: 'starting' });
 
@@ -204,9 +228,13 @@ export class ClaudeSession extends EventEmitter {
     };
     this.proc!.stdin!.write(JSON.stringify(payload) + '\n');
     const messages = this.snapshotState.messages;
+    const wantsTitle = this.snapshotState.title === '';
+    const inferred = wantsTitle ? inferTitle(text) : '';
+    const nextTitle = wantsTitle && inferred ? inferred : this.snapshotState.title;
     this.updateSnapshot({
       ...this.snapshotState,
       status: 'requesting',
+      title: nextTitle,
       messages: [
         ...messages,
         {
@@ -217,6 +245,12 @@ export class ClaudeSession extends EventEmitter {
         },
       ],
     });
+  }
+
+  /** Update the session title. Trims input; empty is allowed. */
+  rename(title: string): void {
+    const trimmed = title.trim();
+    this.updateSnapshot({ ...this.snapshotState, title: trimmed });
   }
 
   /** Terminate the underlying process and close pipes. Idempotent. */
