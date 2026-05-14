@@ -19,5 +19,5 @@ export function registerAllHandlers(deps: IpcDeps): void {
   registerSettings(deps.store);
   registerProjects(deps.registry, deps.afterProjectsMutation);
   registerWorktrees(deps.registry);
-  registerSessions(deps.registry, deps.manager);
+  registerSessions(deps.registry, deps.manager, deps.store);
 }
