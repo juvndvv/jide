@@ -1,8 +1,26 @@
 # Claude CLI Protocol & Agent SDK Research
 
-**Status:** Implementation-grade research document  
+**Status:** Documentation-grade research document  
 **Date:** 2026-05-14  
 **Scope:** Protocol for spawning `claude` CLI from Node.js child process with event streaming, multi-turn interaction, and tool approval flow for jide Electron app (Phase 3)
+
+---
+
+## ⚠ Verification Status — read this first
+
+This document combines **flag-level facts verified against `claude --help` v2.1.141** (high confidence) with **event-schema details extrapolated from the Managed Agents API docs** (medium confidence — the CLI's `stream-json` output may have different field names than the SDK's). Before writing production code:
+
+| Section | Confidence | Reason |
+|---|---|---|
+| §1 CLI flags | High | All flags below cross-checked against local `claude --help` v2.1.141, **except `--max-turns`, which does NOT exist in v2.1.141** (likely hallucinated — remove from any code path). |
+| §2 Event schema | Medium | Field names (`processed_at`, `id`, `type: 'agent.message'`, etc.) come from Managed Agents API docs. The CLI's actual `stream-json` keys may differ — verify in Phase 3 Task 1 spike. |
+| §3 Live stdin input | UNKNOWN | `--input-format stream-json` exists but the input event schema is undocumented for the CLI. Spike required. |
+| §4 Approval flow in print mode | UNKNOWN | `--permission-mode default` semantics with `-p` are undocumented. Spike required. |
+| §5 CLI vs SDK comparison | Medium-High | Comparison itself is sound but some SDK access claims (enterprise gate, beta status) may be outdated as of 2026-05; the `@anthropic-ai/claude-agent-sdk` npm package is publicly distributed. |
+| §6 Recommendation (CLI for Phase 3) | High | Rationale holds regardless of the SDK access details: CLI is locally available, process model fits Electron, migration path stays open. |
+| §7 Pseudo-code | Use as scaffolding only — the `user.tool_confirmation` shape is hypothetical until the spike confirms. |
+
+**Phase 3 Task 1 = runtime spike** that runs real `claude -p --output-format stream-json` invocations, captures live event payloads, tests stdin multi-turn, and writes verified findings to `.planning/spike-results/claude-cli-spikes.md`. The plan's later tasks branch on the spike results.
 
 ---
 
