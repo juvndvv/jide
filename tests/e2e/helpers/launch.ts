@@ -6,6 +6,8 @@ export interface LaunchOptions {
   dialogReturnPath?: string;
   /** Override electron-store cwd. */
   storeCwd?: string;
+  /** Override the resolved Claude CLI binary path (consumed by locator.ts). */
+  claudeBinary?: string;
 }
 
 export async function launchJide(opts: LaunchOptions = {}): Promise<ElectronApplication> {
@@ -19,6 +21,7 @@ export async function launchJide(opts: LaunchOptions = {}): Promise<ElectronAppl
         ? { JIDE_TEST_DIALOG_RETURN: opts.dialogReturnPath }
         : {}),
       ...(opts.storeCwd ? { JIDE_TEST_STORE_CWD: opts.storeCwd } : {}),
+      ...(opts.claudeBinary ? { JIDE_CLAUDE_BINARY: opts.claudeBinary } : {}),
     },
   });
 }
