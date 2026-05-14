@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { SessionManager, SessionCapReachedError } from '../../../../src/main/claude/manager';
+import type { SessionSnapshot } from '@shared/session';
 
 describe('SessionManager', () => {
   it('clamps the cap to [1,16] and defaults to 4', () => {
@@ -38,6 +39,28 @@ describe('SessionManager', () => {
     mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
     mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
     expect(events).toEqual([1, 2]);
+  });
+
+  it('re-emits the snapshot event from underlying sessions', () => {
+    const mgr = new SessionManager();
+    const seen: SessionSnapshot[] = [];
+    mgr.on('snapshot', (s: SessionSnapshot) => seen.push(s));
+    const session = mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    const snap = session.snapshot();
+    session.emit('snapshot', snap);
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toBe(snap);
+  });
+
+  it('killAll invokes kill on every active session across worktrees', () => {
+    const mgr = new SessionManager();
+    const a = mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
+    const b = mgr.createForWorktree({ worktreeId: 'wt-2', cwd: '/tmp' });
+    const aKill = vi.spyOn(a, 'kill').mockImplementation(() => {});
+    const bKill = vi.spyOn(b, 'kill').mockImplementation(() => {});
+    mgr.killAll();
+    expect(aKill).toHaveBeenCalledTimes(1);
+    expect(bKill).toHaveBeenCalledTimes(1);
   });
 
   it('rehydrate bypasses the cap so history is never lost', () => {
