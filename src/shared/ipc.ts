@@ -13,11 +13,15 @@ export const CHANNELS = [
   'worktrees:list-branches',
   'worktrees:add',
   'worktrees:remove',
-  'sessions:start',
+  'sessions:list',
+  'sessions:create',
   'sessions:send',
   'sessions:kill',
   'sessions:approve-tool',
   'sessions:get',
+  'sessions:rename',
+  'sessions:set-active',
+  'sessions:get-active',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
@@ -41,14 +45,18 @@ export type ChannelMap = {
     res: Worktree;
   };
   'worktrees:remove': { req: { projectId: string; worktreePath: string }; res: void };
-  'sessions:start': { req: { worktreeId: string }; res: SessionSnapshot };
-  'sessions:send': { req: { worktreeId: string; text: string }; res: void };
-  'sessions:kill': { req: { worktreeId: string }; res: void };
+  'sessions:list': { req: { worktreeId: string }; res: SessionSnapshot[] };
+  'sessions:create': { req: { worktreeId: string }; res: SessionSnapshot };
+  'sessions:send': { req: { worktreeId: string; sessionId: string; text: string }; res: void };
+  'sessions:kill': { req: { worktreeId: string; sessionId: string }; res: void };
+  'sessions:get': { req: { worktreeId: string; sessionId: string }; res: SessionSnapshot | null };
   'sessions:approve-tool': {
-    req: { worktreeId: string; toolUseId: string; allow: boolean; reason?: string };
+    req: { worktreeId: string; sessionId: string; toolUseId: string; allow: boolean; reason?: string };
     res: void;
   };
-  'sessions:get': { req: { worktreeId: string }; res: SessionSnapshot | null };
+  'sessions:rename': { req: { worktreeId: string; sessionId: string; title: string }; res: void };
+  'sessions:set-active': { req: { worktreeId: string; sessionId: string }; res: void };
+  'sessions:get-active': { req: { worktreeId: string }; res: string | null };
 };
 
 export type Req<C extends Channel> = ChannelMap[C]['req'];
@@ -59,6 +67,7 @@ export const EVENTS = [
   'worktrees:status-changed',
   'worktrees:changed',
   'sessions:event',
+  'sessions:list-changed',
 ] as const;
 export type Event = (typeof EVENTS)[number];
 
@@ -67,6 +76,7 @@ export type EventMap = {
   'worktrees:status-changed': { projectId: string; worktree: Worktree };
   'worktrees:changed': { projectId: string; worktrees: Worktree[] };
   'sessions:event': { worktreeId: string; snapshot: SessionSnapshot };
+  'sessions:list-changed': { worktreeId: string; sessions: SessionSnapshot[] };
 };
 
 export type EventPayload<E extends Event> = EventMap[E];
@@ -92,16 +102,21 @@ export interface JideApi {
     remove: (projectId: string, worktreePath: string) => Promise<void>;
   };
   sessions: {
-    start: (worktreeId: string) => Promise<SessionSnapshot>;
-    send: (worktreeId: string, text: string) => Promise<void>;
-    kill: (worktreeId: string) => Promise<void>;
+    list: (worktreeId: string) => Promise<SessionSnapshot[]>;
+    create: (worktreeId: string) => Promise<SessionSnapshot>;
+    send: (worktreeId: string, sessionId: string, text: string) => Promise<void>;
+    kill: (worktreeId: string, sessionId: string) => Promise<void>;
+    get: (worktreeId: string, sessionId: string) => Promise<SessionSnapshot | null>;
     approveTool: (
       worktreeId: string,
+      sessionId: string,
       toolUseId: string,
       allow: boolean,
       reason?: string,
     ) => Promise<void>;
-    get: (worktreeId: string) => Promise<SessionSnapshot | null>;
+    rename: (worktreeId: string, sessionId: string, title: string) => Promise<void>;
+    setActive: (worktreeId: string, sessionId: string) => Promise<void>;
+    getActive: (worktreeId: string) => Promise<string | null>;
   };
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void;
 }

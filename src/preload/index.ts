@@ -28,20 +28,30 @@ const api: JideApi = {
       ipcRenderer.invoke('worktrees:remove', { projectId, worktreePath }) as Promise<void>,
   },
   sessions: {
-    start: (worktreeId) =>
-      ipcRenderer.invoke('sessions:start', { worktreeId }) as Promise<SessionSnapshot>,
-    send: (worktreeId, text) =>
-      ipcRenderer.invoke('sessions:send', { worktreeId, text }) as Promise<void>,
-    kill: (worktreeId) => ipcRenderer.invoke('sessions:kill', { worktreeId }) as Promise<void>,
-    approveTool: (worktreeId, toolUseId, allow, reason) =>
+    list: (worktreeId) =>
+      ipcRenderer.invoke('sessions:list', { worktreeId }) as Promise<SessionSnapshot[]>,
+    create: (worktreeId) =>
+      ipcRenderer.invoke('sessions:create', { worktreeId }) as Promise<SessionSnapshot>,
+    send: (worktreeId, sessionId, text) =>
+      ipcRenderer.invoke('sessions:send', { worktreeId, sessionId, text }) as Promise<void>,
+    kill: (worktreeId, sessionId) =>
+      ipcRenderer.invoke('sessions:kill', { worktreeId, sessionId }) as Promise<void>,
+    get: (worktreeId, sessionId) =>
+      ipcRenderer.invoke('sessions:get', { worktreeId, sessionId }) as Promise<SessionSnapshot | null>,
+    approveTool: (worktreeId, sessionId, toolUseId, allow, reason) =>
       ipcRenderer.invoke('sessions:approve-tool', {
         worktreeId,
+        sessionId,
         toolUseId,
         allow,
         reason,
       }) as Promise<void>,
-    get: (worktreeId) =>
-      ipcRenderer.invoke('sessions:get', { worktreeId }) as Promise<SessionSnapshot | null>,
+    rename: (worktreeId, sessionId, title) =>
+      ipcRenderer.invoke('sessions:rename', { worktreeId, sessionId, title }) as Promise<void>,
+    setActive: (worktreeId, sessionId) =>
+      ipcRenderer.invoke('sessions:set-active', { worktreeId, sessionId }) as Promise<void>,
+    getActive: (worktreeId) =>
+      ipcRenderer.invoke('sessions:get-active', { worktreeId }) as Promise<string | null>,
   },
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void): (() => void) => {
     if (!(EVENTS as readonly string[]).includes(event)) {

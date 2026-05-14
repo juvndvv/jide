@@ -12,7 +12,7 @@ import type {
 import { CHANNELS, EVENTS } from '@shared/ipc';
 import type { SettingsSchema, ThemeMode } from '@shared/settings';
 import type { ClaudeState, Project, Worktree, WorktreeStatus } from '@shared/project';
-import type { SessionSnapshot } from '@shared/session';
+import type { PersistedSession, SessionSnapshot } from '@shared/session';
 
 describe('shared/ipc — runtime', () => {
   it('freezes CHANNELS and includes all expected entries', () => {
@@ -37,13 +37,26 @@ describe('shared/ipc — runtime', () => {
         'worktrees:list',
         'worktrees:list-branches',
         'worktrees:remove',
-        'sessions:start',
+        'sessions:list',
+        'sessions:create',
         'sessions:send',
         'sessions:kill',
         'sessions:approve-tool',
         'sessions:get',
+        'sessions:rename',
+        'sessions:set-active',
+        'sessions:get-active',
       ].sort(),
     );
+  });
+
+  it('declares the multi-session channels', () => {
+    expect(CHANNELS).toContain('sessions:list');
+    expect(CHANNELS).toContain('sessions:create');
+    expect(CHANNELS).toContain('sessions:rename');
+    expect(CHANNELS).toContain('sessions:set-active');
+    expect(CHANNELS).toContain('sessions:get-active');
+    expect(CHANNELS).not.toContain('sessions:start');
   });
 });
 
@@ -55,7 +68,13 @@ describe('shared/ipc — type contract', () => {
 
   it('settings:get: request is a keyed lookup', () => {
     expectTypeOf<Req<'settings:get'>>().toEqualTypeOf<{
-      key: 'theme' | 'lastWorktreeId' | 'projects';
+      key:
+        | 'theme'
+        | 'lastWorktreeId'
+        | 'projects'
+        | 'maxSessionsPerWorktree'
+        | 'activeSessionByWt'
+        | 'sessions';
     }>();
   });
 
@@ -70,6 +89,44 @@ describe('shared/ipc — type contract', () => {
   it('Channel union equals keyof ChannelMap', () => {
     expectTypeOf<Channel>().toEqualTypeOf<keyof ChannelMap>();
   });
+
+  it('sessions:send requires sessionId', () => {
+    expectTypeOf<Req<'sessions:send'>>().toEqualTypeOf<{
+      worktreeId: string;
+      sessionId: string;
+      text: string;
+    }>();
+  });
+
+  it('sessions:list returns SessionSnapshot[]', () => {
+    expectTypeOf<Req<'sessions:list'>>().toEqualTypeOf<{ worktreeId: string }>();
+    expectTypeOf<Res<'sessions:list'>>().toEqualTypeOf<SessionSnapshot[]>();
+  });
+
+  it('sessions:create returns a SessionSnapshot', () => {
+    expectTypeOf<Req<'sessions:create'>>().toEqualTypeOf<{ worktreeId: string }>();
+    expectTypeOf<Res<'sessions:create'>>().toEqualTypeOf<SessionSnapshot>();
+  });
+
+  it('sessions:rename carries the new title', () => {
+    expectTypeOf<Req<'sessions:rename'>>().toEqualTypeOf<{
+      worktreeId: string;
+      sessionId: string;
+      title: string;
+    }>();
+  });
+
+  it('sessions:set-active scopes by worktree + session', () => {
+    expectTypeOf<Req<'sessions:set-active'>>().toEqualTypeOf<{
+      worktreeId: string;
+      sessionId: string;
+    }>();
+  });
+
+  it('sessions:get-active returns the active sessionId or null', () => {
+    expectTypeOf<Req<'sessions:get-active'>>().toEqualTypeOf<{ worktreeId: string }>();
+    expectTypeOf<Res<'sessions:get-active'>>().toEqualTypeOf<string | null>();
+  });
 });
 
 describe('shared/ipc — settings:set discriminated payload', () => {
@@ -78,6 +135,9 @@ describe('shared/ipc — settings:set discriminated payload', () => {
       | { key: 'theme'; value: ThemeMode }
       | { key: 'lastWorktreeId'; value: string | null }
       | { key: 'projects'; value: Project[] }
+      | { key: 'maxSessionsPerWorktree'; value: number }
+      | { key: 'activeSessionByWt'; value: Record<string, string> }
+      | { key: 'sessions'; value: Record<string, PersistedSession[]> }
     >();
   });
 
@@ -152,8 +212,16 @@ describe('shared/ipc — events drift guards', () => {
         'worktrees:status-changed',
         'worktrees:changed',
         'sessions:event',
+        'sessions:list-changed',
       ].sort(),
     );
+  });
+
+  it('sessions:list-changed payload carries the list', () => {
+    expectTypeOf<EventPayload<'sessions:list-changed'>>().toEqualTypeOf<{
+      worktreeId: string;
+      sessions: SessionSnapshot[];
+    }>();
   });
 
   it('sessions:event payload carries the full snapshot', () => {

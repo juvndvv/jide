@@ -6,6 +6,7 @@ import type {
   DiffLine,
   RateLimitInfo,
   SessionId,
+  PersistedSession,
 } from '@shared/session';
 
 describe('shared/session — type contract', () => {
@@ -49,6 +50,15 @@ describe('shared/session — type contract', () => {
     expectTypeOf<SessionSnapshot['awaitingToolUseId']>().toEqualTypeOf<string | null>();
     expectTypeOf<SessionSnapshot['totalCostUsd']>().toEqualTypeOf<number>();
     expectTypeOf<SessionSnapshot['id']>().toEqualTypeOf<SessionId>();
+  });
+
+  it('SessionSnapshot exposes title and createdAt', () => {
+    expectTypeOf<SessionSnapshot['title']>().toEqualTypeOf<string>();
+    expectTypeOf<SessionSnapshot['createdAt']>().toEqualTypeOf<number>();
+  });
+
+  it('PersistedSession is structurally a SessionSnapshot', () => {
+    expectTypeOf<PersistedSession>().toEqualTypeOf<SessionSnapshot>();
   });
 
   it('DiffLine sign is one of + - space', () => {
