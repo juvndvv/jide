@@ -35,3 +35,14 @@ body {
     box-shadow: 0 0 0 8px #f95a5c00;
   }
 }
+
+@keyframes jideBlink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 1;
+  }
+}
