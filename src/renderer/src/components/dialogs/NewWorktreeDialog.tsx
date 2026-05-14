@@ -20,12 +20,17 @@ export function NewWorktreeDialog({
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    void window.jide.worktrees.listBranches(project.id).then((bs) => {
-      setBranches(bs);
-      if (bs[0]) setSelectedBranch(bs[0]);
-      if (bs.includes('main')) setBaseBranch('main');
-      else if (bs[0]) setBaseBranch(bs[0]);
-    });
+    window.jide.worktrees
+      .listBranches(project.id)
+      .then((bs) => {
+        setBranches(bs);
+        if (bs[0]) setSelectedBranch(bs[0]);
+        if (bs.includes('main')) setBaseBranch('main');
+        else if (bs[0]) setBaseBranch(bs[0]);
+      })
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : String(err));
+      });
   }, [project.id]);
 
   const submit = async (): Promise<void> => {

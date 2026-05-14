@@ -23,7 +23,11 @@ export function App() {
           const matched = projects.find((p) => id.startsWith(`${p.path}:`));
           if (matched) setActiveProjectId(matched.id);
         }}
-        onAddProject={() => void add()}
+        onAddProject={() => {
+          add().catch((err: unknown) => {
+            console.error('[jide] projects:add failed', err);
+          });
+        }}
         onNewWorktree={() => {
           if (activeProjectId) setDialogOpenFor(activeProjectId);
           else if (projects[0]) setDialogOpenFor(projects[0].id);

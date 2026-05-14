@@ -15,12 +15,18 @@ export function useProjects(): UseProjects {
 
   useEffect(() => {
     let alive = true;
-    void window.jide.projects.list().then((list) => {
-      if (alive) {
-        setProjects(list);
-        setLoading(false);
-      }
-    });
+    window.jide.projects
+      .list()
+      .then((list) => {
+        if (alive) {
+          setProjects(list);
+          setLoading(false);
+        }
+      })
+      .catch((err: unknown) => {
+        console.error('[jide] projects:list failed', err);
+        if (alive) setLoading(false);
+      });
     const off = window.jide.on('projects:changed', (next) => setProjects(next));
     return () => {
       alive = false;

@@ -9,33 +9,39 @@ import { SessionManager } from './claude/manager.js';
 
 let manager: SessionManager | null = null;
 
-void app.whenReady().then(() => {
-  const store = createStore({ cwd: process.env.JIDE_TEST_STORE_CWD });
-  const registry = createProjectRegistry(store);
-  manager = new SessionManager();
+app
+  .whenReady()
+  .then(() => {
+    const store = createStore({ cwd: process.env.JIDE_TEST_STORE_CWD });
+    const registry = createProjectRegistry(store);
+    manager = new SessionManager();
 
-  const watcherMgr = createWatcherManager(({ projectId, worktree }) => {
-    sendEvent('worktrees:status-changed', { projectId, worktree });
+    const watcherMgr = createWatcherManager(({ projectId, worktree }) => {
+      sendEvent('worktrees:status-changed', { projectId, worktree });
+    });
+
+    const reconcile = (): void => {
+      watcherMgr.reconcile(registry.list().map((p) => ({ id: p.id, path: p.path })));
+    };
+
+    registerAllHandlers({
+      store,
+      registry,
+      manager,
+      afterProjectsMutation: reconcile,
+    });
+
+    reconcile();
+    createMainWindow();
+
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
+    });
+  })
+  .catch((err: unknown) => {
+    console.error('[jide] boot failed', err);
+    app.quit();
   });
-
-  const reconcile = (): void => {
-    watcherMgr.reconcile(registry.list().map((p) => ({ id: p.id, path: p.path })));
-  };
-
-  registerAllHandlers({
-    store,
-    registry,
-    manager,
-    afterProjectsMutation: reconcile,
-  });
-
-  reconcile();
-  createMainWindow();
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow();
-  });
-});
 
 app.on('before-quit', () => {
   // Kill any active claude subprocesses so they don't outlive Electron.

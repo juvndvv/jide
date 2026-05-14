@@ -22,9 +22,14 @@ export function useSession(worktreeId: string | null): UseSession {
       return;
     }
     let alive = true;
-    void window.jide.sessions.get(worktreeId).then((s) => {
-      if (alive) setSnapshot(s);
-    });
+    window.jide.sessions
+      .get(worktreeId)
+      .then((s) => {
+        if (alive) setSnapshot(s);
+      })
+      .catch((err: unknown) => {
+        console.error('[jide] sessions:get failed', err);
+      });
     const off = window.jide.on('sessions:event', (payload) => {
       if (payload.worktreeId !== worktreeId) return;
       setSnapshot(payload.snapshot);
