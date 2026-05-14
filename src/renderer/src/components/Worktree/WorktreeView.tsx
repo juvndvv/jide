@@ -18,7 +18,14 @@ export interface WorktreeViewProps {
 export function WorktreeView({
   worktreeId, worktree, shellName, maxSessionsPerWorktree, layout, ops,
 }: WorktreeViewProps): JSX.Element {
-  const chat = <ChatPanel worktreeId={worktreeId} maxSessionsPerWorktree={maxSessionsPerWorktree} />;
+  const chat = (
+    <ChatPanel
+      worktreeId={worktreeId}
+      maxSessionsPerWorktree={maxSessionsPerWorktree}
+      layout={layout}
+      ops={ops}
+    />
+  );
 
   if (!worktreeId || !worktree || layout.terminal === 'off') {
     return chat;

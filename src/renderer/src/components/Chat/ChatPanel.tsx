@@ -1,53 +1,38 @@
-import { useEffect, useRef } from 'react';
-import type { Message as Msg } from '@shared/session';
-import { Message } from './Message';
-import { Composer } from './Composer';
-import { ApprovalBar } from './ApprovalBar';
-import { StreamingIndicator } from './StreamingIndicator';
-import { SessionStrip } from './SessionStrip';
-import { SessionMeta } from './SessionMeta';
-import { EmptySessions } from './EmptySessions';
-import { useSession } from '../../shortcuts/useSession';
+import type { JSX } from 'react';
+import type { WorktreeLayout } from '@shared/layout';
+import { countLeaves } from '@shared/layout';
+import type { WorktreeLayoutOps } from '../../shortcuts/useWorktreeLayout';
+import { useTheme } from '../../theme/useTheme';
 import { useSessionsList } from '../../shortcuts/useSessionsList';
 import { useSessionHotkey } from './useSessionHotkey';
-import { useTheme } from '../../theme/useTheme';
+import { SessionStrip } from './SessionStrip';
+import { ChatGrid } from './ChatGrid';
 
 const DEFAULT_MAX_SESSIONS = 4;
 
 export interface ChatPanelProps {
   worktreeId: string | null;
   maxSessionsPerWorktree?: number;
+  layout: WorktreeLayout | null;
+  ops: WorktreeLayoutOps | null;
 }
 
 export function ChatPanel({
   worktreeId,
   maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
-}: ChatPanelProps) {
+  layout,
+  ops,
+}: ChatPanelProps): JSX.Element {
   const { theme } = useTheme();
-  const {
-    sessions,
-    activeId,
-    setActive,
-    create,
-    rename,
-    kill: killSession,
-    capReached,
-  } = useSessionsList(worktreeId, maxSessionsPerWorktree);
-  const { snapshot, send, approveTool, kill: killActive } = useSession(worktreeId, activeId);
-  const listRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!listRef.current) return;
-    listRef.current.scrollTop = listRef.current.scrollHeight;
-  }, [snapshot?.messages.length, snapshot?.status]);
-
+  const { sessions, activeId, setActive, create, rename, kill, capReached } =
+    useSessionsList(worktreeId, maxSessionsPerWorktree);
   useSessionHotkey(worktreeId !== null && !capReached, () => {
     void create();
   });
 
-  if (!worktreeId) {
+  if (!worktreeId || !layout || !ops) {
     return (
-      <main
+      <div
         data-testid="chat-panel-empty"
         style={{
           flex: 1,
@@ -57,23 +42,26 @@ export function ChatPanel({
           color: theme.textLow,
           fontFamily: 'ui-monospace, monospace',
           fontSize: 14,
+          background: theme.panelBg,
         }}
       >
         Selecciona un worktree
-      </main>
+      </div>
     );
   }
 
+  const leafCount = countLeaves(layout.panes);
+
   return (
-    <main
+    <div
       data-testid="chat-panel"
-      data-status={snapshot?.status ?? 'idle'}
       style={{
         flex: 1,
         display: 'flex',
         flexDirection: 'column',
         background: theme.panelBg,
         overflow: 'hidden',
+        minHeight: 0,
       }}
     >
       <SessionStrip
@@ -87,140 +75,19 @@ export function ChatPanel({
           void rename(id, title);
         }}
         onClose={(id) => {
-          void killSession(id);
+          void kill(id);
         }}
         onNew={() => {
           void create();
         }}
       />
-
-      {sessions.length === 0 || !snapshot ? (
-        <EmptySessions
-          onCreate={() => {
-            void create();
-          }}
-          disabled={capReached}
-        />
-      ) : (
-        <>
-          <SessionMeta snapshot={snapshot} />
-          <ChatBody
-            messages={snapshot.messages}
-            status={snapshot.status}
-            onKill={() => {
-              killActive().catch((err: unknown) => {
-                console.error('[jide] sessions:kill failed', err);
-              });
-            }}
-            listRef={listRef}
-          />
-          <ApprovalBar
-            awaitingToolUseId={snapshot.awaitingToolUseId ?? null}
-            toolName={findPendingTool(snapshot.messages, snapshot.awaitingToolUseId)?.name ?? null}
-            onApprove={(id) => {
-              approveTool(id, true).catch((err: unknown) => {
-                console.error('[jide] sessions:approve-tool failed', err);
-              });
-            }}
-            onReject={(id, reason) => {
-              approveTool(id, false, reason).catch((err: unknown) => {
-                console.error('[jide] sessions:approve-tool failed', err);
-              });
-            }}
-          />
-          <Composer
-            onSubmit={(text) => {
-              send(text).catch((err: unknown) => {
-                console.error('[jide] sessions:send failed', err);
-              });
-            }}
-            disabled={!activeId || isBusy(snapshot.status)}
-          />
-        </>
-      )}
-    </main>
+      <ChatGrid
+        worktreeId={worktreeId}
+        tree={layout.panes}
+        activeLeafId={layout.activePaneId}
+        leafCount={leafCount}
+        ops={ops}
+      />
+    </div>
   );
-}
-
-function ChatBody({
-  messages,
-  status,
-  onKill,
-  listRef,
-}: {
-  messages: Msg[];
-  status: string;
-  onKill: () => void;
-  listRef: React.MutableRefObject<HTMLDivElement | null>;
-}) {
-  const { theme } = useTheme();
-  return (
-    <>
-      <header
-        style={{
-          padding: '8px 12px',
-          borderBottom: `1px solid ${theme.borderHair}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          fontSize: 12,
-          color: theme.textMed,
-        }}
-      >
-        <span data-testid="chat-status">{status}</span>
-        <span style={{ flex: 1 }} />
-        {isBusy(status) && (
-          <button
-            type="button"
-            data-testid="chat-kill"
-            onClick={onKill}
-            style={{
-              padding: '4px 10px',
-              border: `1px solid ${theme.error}`,
-              background: theme.panelBg,
-              color: theme.error,
-              borderRadius: 6,
-              fontFamily: 'inherit',
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: 'pointer',
-            }}
-          >
-            Kill
-          </button>
-        )}
-      </header>
-      <div
-        ref={listRef}
-        data-testid="chat-messages"
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '12px 16px',
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        {messages.map((m) => (
-          <Message key={m.id} message={m} />
-        ))}
-        {isBusy(status) && <StreamingIndicator />}
-      </div>
-    </>
-  );
-}
-
-function isBusy(status: string): boolean {
-  return status === 'starting' || status === 'requesting' || status === 'streaming';
-}
-
-function findPendingTool(
-  messages: Msg[],
-  awaitingId: string | null | undefined,
-): Extract<Msg, { type: 'tool' }> | null {
-  if (!awaitingId) return null;
-  for (const m of messages) {
-    if (m.type === 'tool' && m.id === awaitingId) return m;
-  }
-  return null;
 }
