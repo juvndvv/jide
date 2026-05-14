@@ -14,10 +14,7 @@ export default defineConfig({
   },
   preload: {
     plugins: [externalizeDepsPlugin()],
-    build: {
-      outDir: resolve(__dirname, 'out/preload'),
-      rollupOptions: { output: { entryFileNames: '[name].js' } },
-    },
+    build: { outDir: resolve(__dirname, 'out/preload') },
     resolve: { alias: sharedAlias },
   },
   renderer: {
