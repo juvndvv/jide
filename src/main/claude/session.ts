@@ -95,13 +95,26 @@ export class ClaudeSession extends EventEmitter {
       };
       this.terminated = false;
     }
-    const builder = this.opts.argsBuilder ?? defaultArgs;
-    const args = builder(this.sessionId.uuid, this.model);
-    this.proc = spawn(claudeBinary(), args, {
-      cwd: this.opts.cwd,
-      stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env },
-    });
+    // E2E test seam: when both env vars are set, bypass the real CLI args
+    // and spawn `node <fakeBin> --script <fakeScript>` directly. This keeps
+    // the launcher in main while the test controls the script content.
+    const fakeBin = process.env.JIDE_FAKE_CLAUDE_BIN;
+    const fakeScript = process.env.JIDE_CLAUDE_FAKE_SCRIPT;
+    if (fakeBin && fakeScript) {
+      this.proc = spawn('node', [fakeBin, '--script', fakeScript], {
+        cwd: this.opts.cwd,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env },
+      });
+    } else {
+      const builder = this.opts.argsBuilder ?? defaultArgs;
+      const args = builder(this.sessionId.uuid, this.model);
+      this.proc = spawn(claudeBinary(), args, {
+        cwd: this.opts.cwd,
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env },
+      });
+    }
     this.updateSnapshot({ ...this.snapshotState, status: 'starting' });
 
     this.exitGuard = () => {
