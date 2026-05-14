@@ -123,9 +123,14 @@ test.describe('chat pane splitting', () => {
       sessionUuid,
     );
 
-    // After the drag, the formerly-empty pane now shows the session.
-    // Both panes show the session (non-exclusive assignment), so pane-empty disappears.
-    await expect(page.getByTestId('pane-empty')).toHaveCount(0);
+    // Move-semantics: after the drag, the originally-assigned pane becomes empty
+    // (the session moved into the previously empty pane). So pane-empty count is still 1,
+    // but in the other pane than before.
+    await expect(page.getByTestId('pane-empty')).toHaveCount(1);
+
+    // The first pane (originally holding the session) is now the empty one.
+    const firstPaneEmpty = page.getByTestId('pane-header').first().locator('..').getByTestId('pane-empty');
+    await expect(firstPaneEmpty).toBeVisible();
 
     await app.close();
     rmSync(repoDir, { recursive: true, force: true });
