@@ -6,6 +6,10 @@
   "author": "Juan Daniel Forner Garriga <dani@jotade.io>",
   "main": "out/main/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
