@@ -42,3 +42,23 @@ export async function listWorktrees(repoRoot: string): Promise<RawWorktreeEntry[
   const { stdout } = await gitExec(repoRoot, ['worktree', 'list', '--porcelain']);
   return parseWorktreeList(stdout);
 }
+
+export interface WorktreeAddArgs {
+  branch: string;
+  baseBranch?: string;
+  path: string;
+}
+
+export async function worktreeAdd(repoRoot: string, args: WorktreeAddArgs): Promise<void> {
+  const cliArgs = ['worktree', 'add'];
+  if (args.baseBranch) {
+    cliArgs.push('-b', args.branch, args.path, args.baseBranch);
+  } else {
+    cliArgs.push(args.path, args.branch);
+  }
+  await gitExec(repoRoot, cliArgs);
+}
+
+export async function worktreeRemove(repoRoot: string, worktreePath: string): Promise<void> {
+  await gitExec(repoRoot, ['worktree', 'remove', worktreePath]);
+}

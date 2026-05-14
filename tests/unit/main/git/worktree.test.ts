@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { tmpRepo, type TmpRepo } from '../../helpers/tmp-repo';
-import { listWorktrees, parseWorktreeList } from '../../../../src/main/git/worktree';
+import {
+  listWorktrees,
+  parseWorktreeList,
+  worktreeAdd,
+  worktreeRemove,
+} from '../../../../src/main/git/worktree';
 
 describe('listWorktrees', () => {
   let repo: TmpRepo;
@@ -125,5 +130,42 @@ describe('parseWorktreeList — pure parser', () => {
     expect(entries[0]?.branch).toBe('main');
     expect(entries[1]?.path).toBe('/abs/second');
     expect(entries[1]?.branch).toBe('feat/y');
+  });
+});
+
+describe('worktreeAdd / worktreeRemove (roundtrip)', () => {
+  let repo: TmpRepo;
+  beforeEach(() => {
+    repo = tmpRepo();
+    repo.writeFile('README.md', '# repo\n');
+    repo.commit('initial');
+  });
+  afterEach(() => repo.cleanup());
+
+  it('creates a new worktree on an existing branch', async () => {
+    repo.run('git', ['branch', 'feat/y']);
+    const target = repo.siblingPath('roundtrip-y');
+
+    await worktreeAdd(repo.cwd, { branch: 'feat/y', path: target });
+
+    const wts = await listWorktrees(repo.cwd);
+    expect(wts.some((w) => w.branch === 'feat/y' && w.path.endsWith('roundtrip-y'))).toBe(true);
+  });
+
+  it('creates a new worktree with a new branch (-b)', async () => {
+    const target = repo.siblingPath('roundtrip-new');
+    await worktreeAdd(repo.cwd, { branch: 'feat/new', baseBranch: 'main', path: target });
+
+    const wts = await listWorktrees(repo.cwd);
+    expect(wts.some((w) => w.branch === 'feat/new')).toBe(true);
+  });
+
+  it('removes a worktree cleanly', async () => {
+    const target = repo.siblingPath('roundtrip-rm');
+    await worktreeAdd(repo.cwd, { branch: 'feat/rm', baseBranch: 'main', path: target });
+    await worktreeRemove(repo.cwd, target);
+
+    const wts = await listWorktrees(repo.cwd);
+    expect(wts.some((w) => w.path === target)).toBe(false);
   });
 });
