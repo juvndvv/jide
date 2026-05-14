@@ -8,7 +8,7 @@ interface SidebarRowProps {
   children: ReactNode;
   onClick?: () => void;
   kbd?: string;
-  anchorRef?: Ref<HTMLButtonElement>;
+  anchorRef?: Ref<HTMLButtonElement | null>;
   'data-testid'?: string;
 }
 

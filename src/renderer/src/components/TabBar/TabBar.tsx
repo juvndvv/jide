@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import type { Project, Worktree } from '@shared/project';
 import type { TabRef } from '@shared/settings';
 import { useTheme } from '../../theme/useTheme';

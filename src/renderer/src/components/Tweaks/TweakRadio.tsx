@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { useTheme } from '../../theme/useTheme';
 
 export interface TweakRadioOption<T extends string> {

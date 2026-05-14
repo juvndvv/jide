@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type JSX } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';

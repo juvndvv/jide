@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from 'react';
+import type { CSSProperties, JSX, ReactNode } from 'react';
 import { JIcon } from '../icons/JIcon';
 
 export type StatusIconName = 'branch' | 'arrow-up' | 'arrow-down' | 'diff' | 'claude' | 'cli';

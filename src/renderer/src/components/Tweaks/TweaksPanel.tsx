@@ -6,7 +6,7 @@ import { TweakRadio } from './TweakRadio';
 import { TweakColor } from './TweakColor';
 
 export interface TweaksPanelProps {
-  anchorRef: RefObject<HTMLButtonElement>;
+  anchorRef: RefObject<HTMLButtonElement | null>;
   side: SidebarSide;
   onClose: () => void;
 }

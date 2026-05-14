@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import type { Project, Worktree } from '@shared/project';
 import { StatusItem } from './StatusItem';
 import { useTheme } from '../../theme/useTheme';

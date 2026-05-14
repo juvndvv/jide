@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import { ACCENTS, type AccentId } from '../../theme/tokens';
 import { useTheme } from '../../theme/useTheme';
 

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import type { Project, Worktree } from '@shared/project';
 import { JIcon } from '../icons/JIcon';
 import { useTheme } from '../../theme/useTheme';

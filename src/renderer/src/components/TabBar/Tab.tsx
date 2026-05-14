@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type JSX } from 'react';
 import type { Project, Worktree } from '@shared/project';
 import { useTheme } from '../../theme/useTheme';
 import { StatusDot } from '../icons/StatusDot';
