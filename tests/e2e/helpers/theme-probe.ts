@@ -24,19 +24,6 @@ export async function themeProbe(page: Page): Promise<ThemeProbeSnapshot> {
   });
 }
 
-/** Set a setting via the renderer-exposed API. */
-export async function setTweak<K extends string>(page: Page, key: K, value: unknown): Promise<void> {
-  await page.evaluate(
-    ({ k, v }) => {
-      const w = window as unknown as {
-        jide: { settings: { set: (k: string, v: unknown) => Promise<void> } };
-      };
-      return w.jide.settings.set(k, v);
-    },
-    { k: key, v: value },
-  );
-}
-
 export function rgbToHex(color: string): string {
   const m = color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!m) return color;
