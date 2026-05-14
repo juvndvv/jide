@@ -1,7 +1,17 @@
 import { describe, it, expect, expectTypeOf } from 'vitest';
-import type { Channel, ChannelMap, JideApi, Req, Res } from '@shared/ipc';
-import { CHANNELS } from '@shared/ipc';
+import type {
+  Channel,
+  ChannelMap,
+  Event,
+  EventMap,
+  EventPayload,
+  JideApi,
+  Req,
+  Res,
+} from '@shared/ipc';
+import { CHANNELS, EVENTS } from '@shared/ipc';
 import type { SettingsSchema, ThemeMode } from '@shared/settings';
+import type { ClaudeState, Project, Worktree, WorktreeStatus } from '@shared/project';
 
 describe('shared/ipc — runtime', () => {
   it('freezes CHANNELS and includes all expected entries', () => {
@@ -14,7 +24,20 @@ describe('shared/ipc — runtime', () => {
   it('CHANNELS keys match the runtime keys we use across the app', () => {
     // Sanity guard: if CHANNELS grows, this list is the human-readable
     // mirror future contributors should update.
-    expect([...CHANNELS].sort()).toEqual(['ping', 'settings:get', 'settings:set']);
+    expect([...CHANNELS].sort()).toEqual(
+      [
+        'ping',
+        'projects:add',
+        'projects:list',
+        'projects:remove',
+        'settings:get',
+        'settings:set',
+        'worktrees:add',
+        'worktrees:list',
+        'worktrees:list-branches',
+        'worktrees:remove',
+      ].sort(),
+    );
   });
 });
 
@@ -25,7 +48,9 @@ describe('shared/ipc — type contract', () => {
   });
 
   it('settings:get: request is a keyed lookup', () => {
-    expectTypeOf<Req<'settings:get'>>().toEqualTypeOf<{ key: 'theme' | 'lastWorktreeId' }>();
+    expectTypeOf<Req<'settings:get'>>().toEqualTypeOf<{
+      key: 'theme' | 'lastWorktreeId' | 'projects';
+    }>();
   });
 
   it('settings:get: response is the union over all setting value types', () => {
@@ -44,7 +69,9 @@ describe('shared/ipc — type contract', () => {
 describe('shared/ipc — settings:set discriminated payload', () => {
   it('matches key with value (positive)', () => {
     expectTypeOf<Req<'settings:set'>>().toEqualTypeOf<
-      { key: 'theme'; value: ThemeMode } | { key: 'lastWorktreeId'; value: string | null }
+      | { key: 'theme'; value: ThemeMode }
+      | { key: 'lastWorktreeId'; value: string | null }
+      | { key: 'projects'; value: Project[] }
     >();
   });
 
@@ -78,5 +105,84 @@ describe('shared/ipc — JideApi precision', () => {
 
   it('ping returns Promise<string>', () => {
     expectTypeOf<ReturnType<PingFn>>().toEqualTypeOf<Promise<string>>();
+  });
+});
+
+describe('shared/project — type contract', () => {
+  it('Worktree includes the fields the Sidebar consumes from the mock', () => {
+    const w: Worktree = {
+      id: 'wt-1',
+      branch: 'feat/x',
+      path: '/tmp/repo-feat-x',
+      head: 'abc1234',
+      status: 'modified',
+      claude: 'idle',
+      changes: 3,
+      ahead: 1,
+      behind: 0,
+    };
+    expectTypeOf(w.status).toEqualTypeOf<WorktreeStatus>();
+    expectTypeOf(w.claude).toEqualTypeOf<ClaudeState>();
+  });
+
+  it('Project carries id/name/path/worktrees', () => {
+    const p: Project = {
+      id: 'p1',
+      name: 'jide',
+      path: '/Users/x/code/jide',
+      expanded: true,
+      worktrees: [],
+    };
+    expectTypeOf(p.worktrees).toEqualTypeOf<Worktree[]>();
+  });
+});
+
+describe('shared/ipc — events drift guards', () => {
+  it('EVENTS includes phase-2 push channels and is frozen', () => {
+    expect(Object.isFrozen(EVENTS)).toBe(true);
+    expect([...EVENTS].sort()).toEqual(['projects:changed', 'worktrees:status-changed'].sort());
+  });
+
+  it('Event union equals keyof EventMap', () => {
+    expectTypeOf<Event>().toEqualTypeOf<keyof EventMap>();
+  });
+
+  it('projects:changed payload is Project[]', () => {
+    expectTypeOf<EventPayload<'projects:changed'>>().toEqualTypeOf<Project[]>();
+  });
+
+  it('worktrees:status-changed payload identifies project + worktree', () => {
+    expectTypeOf<EventPayload<'worktrees:status-changed'>>().toEqualTypeOf<{
+      projectId: string;
+      worktree: Worktree;
+    }>();
+  });
+});
+
+describe('shared/ipc — JideApi v2 surface', () => {
+  it('exposes projects API with list/add/remove', () => {
+    expectTypeOf<JideApi['projects']>().toEqualTypeOf<{
+      list: () => Promise<Project[]>;
+      add: () => Promise<Project | null>;
+      remove: (id: string) => Promise<void>;
+    }>();
+  });
+
+  it('exposes worktrees API with list/listBranches/add/remove', () => {
+    expectTypeOf<JideApi['worktrees']>().toEqualTypeOf<{
+      list: (projectId: string) => Promise<Worktree[]>;
+      listBranches: (projectId: string) => Promise<string[]>;
+      add: (
+        projectId: string,
+        args: { branch: string; baseBranch?: string; path: string },
+      ) => Promise<Worktree>;
+      remove: (projectId: string, worktreePath: string) => Promise<void>;
+    }>();
+  });
+
+  it('on() is generic over Event and returns a disposer', () => {
+    expectTypeOf<JideApi['on']>().toEqualTypeOf<
+      <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void
+    >();
   });
 });
