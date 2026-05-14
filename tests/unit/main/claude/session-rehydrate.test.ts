@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ClaudeSession } from '../../../../src/main/claude/session';
-import type { PersistedSession } from '@shared/session';
+import type { PersistedSession, SessionSnapshot } from '@shared/session';
 
 const SEED: PersistedSession = {
   id: { worktreeId: 'wt-1', uuid: 'seed-uuid' },
@@ -43,7 +43,7 @@ describe('ClaudeSession.rename', () => {
   it('updates the title and emits a snapshot', () => {
     const s = new ClaudeSession({ worktreeId: 'wt-1', cwd: '/tmp' });
     let observed = '';
-    s.on('snapshot', (snap) => {
+    s.on('snapshot', (snap: SessionSnapshot) => {
       observed = snap.title;
     });
     s.rename('  My new title  ');
