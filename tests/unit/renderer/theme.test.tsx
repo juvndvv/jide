@@ -24,10 +24,12 @@ function mockMatchMedia(matches: boolean) {
   vi.spyOn(window, 'matchMedia').mockReturnValue({
     matches,
     media: '(prefers-color-scheme: dark)',
-    addEventListener: (_e: string, fn: () => void) => {
+    addEventListener: (event: string, fn: () => void) => {
+      if (event !== 'change') return;
       listeners.add(fn);
     },
-    removeEventListener: (_e: string, fn: () => void) => {
+    removeEventListener: (event: string, fn: () => void) => {
+      if (event !== 'change') return;
       listeners.delete(fn);
     },
     onchange: null,

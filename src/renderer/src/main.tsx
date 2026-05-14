@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState, type JSX } from 'react';
+import { StrictMode, useEffect, useMemo, useState, type JSX } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { ThemeProvider } from './theme/ThemeProvider';
@@ -31,22 +31,25 @@ function Root(): JSX.Element | null {
       });
   }, []);
 
-  if (!initial) return null;
+  const persist = useMemo(
+    () => ({
+      setMode: (m: ThemeMode) => {
+        void window.jide.settings.set('theme', m);
+      },
+      setAccent: (a: AccentId) => {
+        void window.jide.settings.set('accent', a);
+      },
+      setDensity: (d: DensityId) => {
+        void window.jide.settings.set('density', d);
+      },
+      setSidebarSide: (s: SidebarSide) => {
+        void window.jide.settings.set('sidebarSide', s);
+      },
+    }),
+    [],
+  );
 
-  const persist = {
-    setMode: (m: ThemeMode) => {
-      void window.jide.settings.set('theme', m);
-    },
-    setAccent: (a: AccentId) => {
-      void window.jide.settings.set('accent', a);
-    },
-    setDensity: (d: DensityId) => {
-      void window.jide.settings.set('density', d);
-    },
-    setSidebarSide: (s: SidebarSide) => {
-      void window.jide.settings.set('sidebarSide', s);
-    },
-  };
+  if (!initial) return null;
 
   return (
     <ThemeProvider initial={initial} persist={persist}>
