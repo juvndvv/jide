@@ -18,14 +18,25 @@ export function createWatcher(opts: WatcherOptions): WatcherHandle {
   const client = createGitClient(opts.repoRoot);
   let timer: NodeJS.Timeout | null = null;
 
+  // chokidar opens one fd per watched directory (fs.watch). A project with a
+  // populated node_modules tree easily exceeds macOS' default ulimit of 256
+  // and surfaces as EMFILE. The function predicate prevents descent into
+  // heavy / irrelevant subtrees BEFORE the fd is opened; depth caps recursion
+  // to a sane limit so a freak deep tree can't blow past it anyway.
+  const isIgnored = (p: string): boolean =>
+    /(^|\/)\.git(\/|$)/.test(p) ||
+    /(^|\/)node_modules(\/|$)/.test(p) ||
+    /(^|\/)dist(\/|$)/.test(p) ||
+    /(^|\/)out(\/|$)/.test(p) ||
+    /(^|\/)\.next(\/|$)/.test(p) ||
+    /(^|\/)\.vite(\/|$)/.test(p) ||
+    /(^|\/)coverage(\/|$)/.test(p) ||
+    /(^|\/)\.turbo(\/|$)/.test(p);
   const watcher: FSWatcher = chokidar.watch(opts.repoRoot, {
-    ignored: (path) =>
-      /\/\.git(\/|$)/.test(path) ||
-      /\/node_modules(\/|$)/.test(path) ||
-      /\/dist(\/|$)/.test(path) ||
-      /\/out(\/|$)/.test(path),
+    ignored: isIgnored,
     ignoreInitial: true,
     persistent: true,
+    depth: 10,
   });
 
   const fire = (): void => {
