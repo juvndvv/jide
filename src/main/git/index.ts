@@ -1,7 +1,16 @@
+import { realpathSync } from 'node:fs';
 import type { Worktree } from '@shared/project';
 import { listWorktrees, worktreeAdd, worktreeRemove, type WorktreeAddArgs } from './worktree.js';
 import { worktreeStatus } from './status.js';
 import { listBranches } from './branches.js';
+
+function canonical(p: string): string {
+  try {
+    return realpathSync(p);
+  } catch {
+    return p;
+  }
+}
 
 export interface GitClient {
   worktrees(): Promise<Worktree[]>;
@@ -44,7 +53,8 @@ export function createGitClient(repoRoot: string): GitClient {
     async addWorktree(args) {
       await worktreeAdd(repoRoot, args);
       const all = await this.worktrees();
-      const found = all.find((w) => w.path === args.path);
+      const target = canonical(args.path);
+      const found = all.find((w) => canonical(w.path) === target);
       if (!found) throw new Error(`worktree at ${args.path} not found after add`);
       return found;
     },
