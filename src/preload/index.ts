@@ -37,7 +37,10 @@ const api: JideApi = {
     kill: (worktreeId, sessionId) =>
       ipcRenderer.invoke('sessions:kill', { worktreeId, sessionId }) as Promise<void>,
     get: (worktreeId, sessionId) =>
-      ipcRenderer.invoke('sessions:get', { worktreeId, sessionId }) as Promise<SessionSnapshot | null>,
+      ipcRenderer.invoke('sessions:get', {
+        worktreeId,
+        sessionId,
+      }) as Promise<SessionSnapshot | null>,
     approveTool: (worktreeId, sessionId, toolUseId, allow, reason) =>
       ipcRenderer.invoke('sessions:approve-tool', {
         worktreeId,

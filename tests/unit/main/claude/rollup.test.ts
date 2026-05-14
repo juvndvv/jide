@@ -27,13 +27,17 @@ describe('claudeStateForWorktree', () => {
   });
 
   it('prioritises running over awaiting/error/idle', () => {
-    expect(claudeStateForWorktree([snap('idle'), snap('streaming'), snap('error')])).toBe('running');
+    expect(claudeStateForWorktree([snap('idle'), snap('streaming'), snap('error')])).toBe(
+      'running',
+    );
     expect(claudeStateForWorktree([snap('awaiting'), snap('requesting')])).toBe('running');
     expect(claudeStateForWorktree([snap('starting'), snap('error')])).toBe('running');
   });
 
   it('prioritises awaiting over error/idle when no session is running', () => {
-    expect(claudeStateForWorktree([snap('awaiting'), snap('error'), snap('idle')])).toBe('awaiting');
+    expect(claudeStateForWorktree([snap('awaiting'), snap('error'), snap('idle')])).toBe(
+      'awaiting',
+    );
   });
 
   it('prioritises error over idle when no session is running or awaiting', () => {

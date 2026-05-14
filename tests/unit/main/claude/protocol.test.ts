@@ -56,7 +56,10 @@ describe('parseEventLine', () => {
 
 describe('applyEvent — system/init', () => {
   it('does NOT overwrite the snapshot uuid even when the CLI emits a different session_id', () => {
-    const seeded = { ...emptySnapshot('wt', 'sonnet', '/tmp'), id: { worktreeId: 'wt', uuid: 'jide-internal' } };
+    const seeded = {
+      ...emptySnapshot('wt', 'sonnet', '/tmp'),
+      id: { worktreeId: 'wt', uuid: 'jide-internal' },
+    };
     const next = applyEvent(seeded, {
       type: 'system',
       subtype: 'init',
@@ -68,7 +71,10 @@ describe('applyEvent — system/init', () => {
   });
 
   it('still absorbs model and cwd from the init event', () => {
-    const seeded = { ...emptySnapshot('wt', 'sonnet', '/old'), id: { worktreeId: 'wt', uuid: 'u' } };
+    const seeded = {
+      ...emptySnapshot('wt', 'sonnet', '/old'),
+      id: { worktreeId: 'wt', uuid: 'u' },
+    };
     const next = applyEvent(seeded, {
       type: 'system',
       subtype: 'init',

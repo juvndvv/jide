@@ -9,13 +9,7 @@ export interface SessionChipProps {
   onClose: () => void;
 }
 
-export function SessionChip({
-  snapshot,
-  active,
-  onSelect,
-  onRename,
-  onClose,
-}: SessionChipProps) {
+export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: SessionChipProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(snapshot.title);
   const inputRef = useRef<HTMLInputElement | null>(null);

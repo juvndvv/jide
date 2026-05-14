@@ -28,7 +28,7 @@ export function useSessionsList(worktreeId: string | null, max: number): UseSess
     ]).then(([list, active]) => {
       if (!alive) return;
       setSessions(list);
-      setActiveId(active ?? (list[0]?.id.uuid ?? null));
+      setActiveId(active ?? list[0]?.id.uuid ?? null);
     });
     const off = window.jide.on('sessions:list-changed', (payload) => {
       if (payload.worktreeId !== worktreeId) return;

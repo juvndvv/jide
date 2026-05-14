@@ -51,7 +51,13 @@ export type ChannelMap = {
   'sessions:kill': { req: { worktreeId: string; sessionId: string }; res: void };
   'sessions:get': { req: { worktreeId: string; sessionId: string }; res: SessionSnapshot | null };
   'sessions:approve-tool': {
-    req: { worktreeId: string; sessionId: string; toolUseId: string; allow: boolean; reason?: string };
+    req: {
+      worktreeId: string;
+      sessionId: string;
+      toolUseId: string;
+      allow: boolean;
+      reason?: string;
+    };
     res: void;
   };
   'sessions:rename': { req: { worktreeId: string; sessionId: string; title: string }; res: void };

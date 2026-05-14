@@ -128,8 +128,7 @@ export class ClaudeSession extends EventEmitter {
       });
     } else {
       const resume = this.rehydrated;
-      const builder =
-        this.opts.argsBuilder ?? ((uuid, model) => defaultArgs(uuid, model, resume));
+      const builder = this.opts.argsBuilder ?? ((uuid, model) => defaultArgs(uuid, model, resume));
       const args = builder(this.sessionId.uuid, this.model);
       this.proc = spawn(claudeBinary(), args, {
         cwd: this.opts.cwd,

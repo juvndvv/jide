@@ -23,9 +23,7 @@ export function SessionMeta({ snapshot }: SessionMetaProps) {
       <span data-testid="session-meta-status">status: {snapshot.status}</span>
       <span data-testid="session-meta-tokens">tokens: —</span>
       <span data-testid="session-meta-ctx">ctx: —</span>
-      <span data-testid="session-meta-cost">
-        ${snapshot.totalCostUsd.toFixed(4)}
-      </span>
+      <span data-testid="session-meta-cost">${snapshot.totalCostUsd.toFixed(4)}</span>
     </div>
   );
 }

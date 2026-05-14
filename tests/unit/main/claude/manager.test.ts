@@ -20,8 +20,9 @@ describe('SessionManager', () => {
   it('throws SessionCapReachedError when over the cap', () => {
     const mgr = new SessionManager({ maxSessionsPerWorktree: 1 });
     mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
-    expect(() => mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' }))
-      .toThrowError(SessionCapReachedError);
+    expect(() => mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' })).toThrowError(
+      SessionCapReachedError,
+    );
   });
 
   it('getById finds the session by uuid', () => {
@@ -35,7 +36,9 @@ describe('SessionManager', () => {
   it('emits list-changed when a session is created', () => {
     const mgr = new SessionManager();
     const events: number[] = [];
-    mgr.on('list-changed', (payload: { sessions: unknown[] }) => events.push(payload.sessions.length));
+    mgr.on('list-changed', (payload: { sessions: unknown[] }) =>
+      events.push(payload.sessions.length),
+    );
     mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
     mgr.createForWorktree({ worktreeId: 'wt-1', cwd: '/tmp' });
     expect(events).toEqual([1, 2]);
@@ -78,9 +81,7 @@ describe('SessionManager', () => {
       awaitingToolUseId: null,
       totalCostUsd: 0,
     };
-    expect(() =>
-      mgr.rehydrate({ worktreeId: 'wt-1', cwd: '/tmp', seed }),
-    ).not.toThrow();
+    expect(() => mgr.rehydrate({ worktreeId: 'wt-1', cwd: '/tmp', seed })).not.toThrow();
     expect(mgr.listForWorktree('wt-1')).toHaveLength(2);
   });
 });

@@ -54,12 +54,9 @@ app
       afterProjectsMutation: reconcile,
     });
 
-    manager.on(
-      'list-changed',
-      (payload: { worktreeId: string; sessions: SessionSnapshot[] }) => {
-        void emitClaudeStateRollup(registry, payload.worktreeId, payload.sessions);
-      },
-    );
+    manager.on('list-changed', (payload: { worktreeId: string; sessions: SessionSnapshot[] }) => {
+      void emitClaudeStateRollup(registry, payload.worktreeId, payload.sessions);
+    });
 
     reconcile();
     createMainWindow();

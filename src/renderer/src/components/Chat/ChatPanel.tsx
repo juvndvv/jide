@@ -22,8 +22,15 @@ export function ChatPanel({
   worktreeId,
   maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
 }: ChatPanelProps) {
-  const { sessions, activeId, setActive, create, rename, kill: killSession, capReached } =
-    useSessionsList(worktreeId, maxSessionsPerWorktree);
+  const {
+    sessions,
+    activeId,
+    setActive,
+    create,
+    rename,
+    kill: killSession,
+    capReached,
+  } = useSessionsList(worktreeId, maxSessionsPerWorktree);
   const { snapshot, send, approveTool, kill: killActive } = useSession(worktreeId, activeId);
   const listRef = useRef<HTMLDivElement | null>(null);
 
