@@ -3,7 +3,7 @@ import type { Worktree } from '@shared/project';
 import { JIcon } from '../icons/JIcon';
 import { StatusDot } from '../icons/StatusDot';
 
-const ACCENT = '#D97757';
+const ACCENT = '#F95A5C';
 
 export function WorktreeRow({
   worktree,

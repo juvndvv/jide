@@ -7,7 +7,7 @@ export function UserMessage({ message }: { message: Extract<Message, { type: 'us
       style={{
         alignSelf: 'flex-end',
         maxWidth: '80%',
-        background: '#D97757',
+        background: '#F95A5C',
         color: '#FFFFFF',
         borderRadius: 12,
         padding: '8px 12px',

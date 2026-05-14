@@ -83,7 +83,7 @@ export function Composer({ onSubmit, disabled, placeholder }: ComposerProps) {
           padding: '0 14px',
           borderRadius: 8,
           border: 'none',
-          background: disabled || !text.trim() ? '#00000020' : '#D97757',
+          background: disabled || !text.trim() ? '#00000020' : '#F95A5C',
           color: '#FFFFFF',
           fontFamily: 'inherit',
           fontSize: 13,
