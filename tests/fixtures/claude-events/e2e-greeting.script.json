@@ -1,0 +1,49 @@
+[
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "system",
+      "subtype": "init",
+      "session_id": "fake-session-e2e",
+      "cwd": "/tmp/fake",
+      "model": "claude-haiku-4-5-20251001",
+      "tools": ["Bash", "Read", "Edit"],
+      "permissionMode": "default"
+    }
+  },
+  { "kind": "echo-stdin", "expect": "user" },
+  {
+    "kind": "emit",
+    "delayMs": 10,
+    "event": {
+      "type": "assistant",
+      "message": {
+        "id": "msg_e2e_1",
+        "type": "message",
+        "role": "assistant",
+        "model": "claude-haiku-4-5-20251001",
+        "content": [
+          {
+            "type": "text",
+            "text": "Hello from fake-claude in E2E."
+          }
+        ],
+        "stop_reason": null
+      }
+    }
+  },
+  {
+    "kind": "emit",
+    "delayMs": 5,
+    "event": {
+      "type": "result",
+      "subtype": "success",
+      "is_error": false,
+      "total_cost_usd": 0,
+      "num_turns": 1,
+      "stop_reason": "end_turn",
+      "result": "Hello from fake-claude in E2E."
+    }
+  }
+]

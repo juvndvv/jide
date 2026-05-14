@@ -14,6 +14,9 @@ export default tseslint.config(
       'playwright-report/',
       'design/',
       '.planning/',
+      // Spike scripts are one-off Node tools, not production code or tests.
+      'tests/spike/',
+      'tests/fixtures/fake-claude.mjs',
     ],
   },
   js.configs.recommended,

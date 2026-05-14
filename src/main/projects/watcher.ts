@@ -13,23 +13,31 @@ export interface WatcherHandle {
   dispose: () => Promise<void>;
 }
 
+// chokidar opens one fd per watched directory (fs.watch). A project with a
+// populated node_modules tree easily exceeds macOS' default ulimit of 256
+// and surfaces as EMFILE. The function predicate prevents descent into
+// heavy / irrelevant subtrees BEFORE the fd is opened; depth caps recursion
+// to a sane limit so a freak deep tree can't blow past it anyway.
+const isIgnored = (p: string): boolean =>
+  /(^|\/)\.git(\/|$)/.test(p) ||
+  /(^|\/)node_modules(\/|$)/.test(p) ||
+  /(^|\/)dist(\/|$)/.test(p) ||
+  /(^|\/)out(\/|$)/.test(p) ||
+  /(^|\/)\.next(\/|$)/.test(p) ||
+  /(^|\/)\.vite(\/|$)/.test(p) ||
+  /(^|\/)coverage(\/|$)/.test(p) ||
+  /(^|\/)\.turbo(\/|$)/.test(p);
+
 export function createWatcher(opts: WatcherOptions): WatcherHandle {
   const debounceMs = opts.debounceMs ?? 500;
   const client = createGitClient(opts.repoRoot);
   let timer: NodeJS.Timeout | null = null;
-
-  const watcher: FSWatcher = chokidar.watch(opts.repoRoot, {
-    ignored: (path) =>
-      /\/\.git(\/|$)/.test(path) ||
-      /\/node_modules(\/|$)/.test(path) ||
-      /\/dist(\/|$)/.test(path) ||
-      /\/out(\/|$)/.test(path),
-    ignoreInitial: true,
-    persistent: true,
-  });
+  let active: FSWatcher | null = null;
+  let disposed = false;
 
   const fire = (): void => {
     timer = null;
+    if (disposed) return;
     void (async () => {
       try {
         const worktrees = await client.worktrees();
@@ -42,15 +50,47 @@ export function createWatcher(opts: WatcherOptions): WatcherHandle {
     })();
   };
 
-  watcher.on('all', () => {
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(fire, debounceMs);
-  });
+  const startWatcher = (usePolling: boolean): FSWatcher => {
+    const w = chokidar.watch(opts.repoRoot, {
+      ignored: isIgnored,
+      ignoreInitial: true,
+      persistent: true,
+      depth: 10,
+      usePolling,
+      // Polling at 1s is a reasonable trade-off when EMFILE forces this path:
+      // a developer waits ~1s for the status badge, no fd cost.
+      interval: usePolling ? 1000 : undefined,
+    });
+    w.on('all', () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(fire, debounceMs);
+    });
+    w.on('error', (err) => {
+      const code = (err as NodeJS.ErrnoException).code;
+      if ((code === 'EMFILE' || code === 'ENOSPC') && !usePolling) {
+        // Fall back to polling — no fd cost, mild CPU cost.
+        console.warn(
+          `[watcher] ${opts.repoRoot}: ${code} from fs.watch. Falling back to polling watcher.`,
+        );
+        void w.close().finally(() => {
+          if (disposed) return;
+          active = startWatcher(true);
+        });
+        return;
+      }
+      console.error('[watcher] error', err);
+    });
+    return w;
+  };
+
+  active = startWatcher(false);
 
   return {
     async dispose() {
+      disposed = true;
       if (timer) clearTimeout(timer);
-      await watcher.close();
+      if (active) await active.close();
+      active = null;
     },
   };
 }
@@ -79,7 +119,12 @@ export function createWatcherManager(
       }
       for (const id of [...handles.keys()]) {
         if (!seen.has(id)) {
-          void handles.get(id)?.dispose();
+          handles
+            .get(id)
+            ?.dispose()
+            .catch((err: unknown) => {
+              console.error('[watcher] dispose failed', err);
+            });
           handles.delete(id);
         }
       }

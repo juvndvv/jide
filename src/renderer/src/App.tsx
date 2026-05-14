@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
+import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { useProjects } from './shortcuts/useProjects';
 
@@ -22,26 +23,18 @@ export function App() {
           const matched = projects.find((p) => id.startsWith(`${p.path}:`));
           if (matched) setActiveProjectId(matched.id);
         }}
-        onAddProject={() => void add()}
+        onAddProject={() => {
+          add().catch((err: unknown) => {
+            console.error('[jide] projects:add failed', err);
+          });
+        }}
         onNewWorktree={() => {
           if (activeProjectId) setDialogOpenFor(activeProjectId);
           else if (projects[0]) setDialogOpenFor(projects[0].id);
         }}
       />
 
-      <main
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#00000040',
-          fontFamily: 'ui-monospace, monospace',
-          fontSize: 14,
-        }}
-      >
-        {activeWorktreeId ?? 'Selecciona un worktree'}
-      </main>
+      <ChatPanel worktreeId={activeWorktreeId} />
 
       {dialogOpenFor && (
         <NewWorktreeDialog

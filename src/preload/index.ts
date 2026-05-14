@@ -3,6 +3,7 @@ import type { Event, EventPayload, JideApi } from '@shared/ipc';
 import { EVENTS } from '@shared/ipc';
 import type { SettingsKey, SettingsSchema } from '@shared/settings';
 import type { Project, Worktree } from '@shared/project';
+import type { SessionSnapshot } from '@shared/session';
 
 const api: JideApi = {
   ping: () => ipcRenderer.invoke('ping') as Promise<string>,
@@ -25,6 +26,22 @@ const api: JideApi = {
       ipcRenderer.invoke('worktrees:add', { projectId, ...args }) as Promise<Worktree>,
     remove: (projectId, worktreePath) =>
       ipcRenderer.invoke('worktrees:remove', { projectId, worktreePath }) as Promise<void>,
+  },
+  sessions: {
+    start: (worktreeId) =>
+      ipcRenderer.invoke('sessions:start', { worktreeId }) as Promise<SessionSnapshot>,
+    send: (worktreeId, text) =>
+      ipcRenderer.invoke('sessions:send', { worktreeId, text }) as Promise<void>,
+    kill: (worktreeId) => ipcRenderer.invoke('sessions:kill', { worktreeId }) as Promise<void>,
+    approveTool: (worktreeId, toolUseId, allow, reason) =>
+      ipcRenderer.invoke('sessions:approve-tool', {
+        worktreeId,
+        toolUseId,
+        allow,
+        reason,
+      }) as Promise<void>,
+    get: (worktreeId) =>
+      ipcRenderer.invoke('sessions:get', { worktreeId }) as Promise<SessionSnapshot | null>,
   },
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void): (() => void) => {
     if (!(EVENTS as readonly string[]).includes(event)) {

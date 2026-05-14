@@ -12,6 +12,7 @@ import type {
 import { CHANNELS, EVENTS } from '@shared/ipc';
 import type { SettingsSchema, ThemeMode } from '@shared/settings';
 import type { ClaudeState, Project, Worktree, WorktreeStatus } from '@shared/project';
+import type { SessionSnapshot } from '@shared/session';
 
 describe('shared/ipc — runtime', () => {
   it('freezes CHANNELS and includes all expected entries', () => {
@@ -36,6 +37,11 @@ describe('shared/ipc — runtime', () => {
         'worktrees:list',
         'worktrees:list-branches',
         'worktrees:remove',
+        'sessions:start',
+        'sessions:send',
+        'sessions:kill',
+        'sessions:approve-tool',
+        'sessions:get',
       ].sort(),
     );
   });
@@ -141,8 +147,20 @@ describe('shared/ipc — events drift guards', () => {
   it('EVENTS includes phase-2 push channels and is frozen', () => {
     expect(Object.isFrozen(EVENTS)).toBe(true);
     expect([...EVENTS].sort()).toEqual(
-      ['projects:changed', 'worktrees:status-changed', 'worktrees:changed'].sort(),
+      [
+        'projects:changed',
+        'worktrees:status-changed',
+        'worktrees:changed',
+        'sessions:event',
+      ].sort(),
     );
+  });
+
+  it('sessions:event payload carries the full snapshot', () => {
+    expectTypeOf<EventPayload<'sessions:event'>>().toEqualTypeOf<{
+      worktreeId: string;
+      snapshot: SessionSnapshot;
+    }>();
   });
 
   it('Event union equals keyof EventMap', () => {

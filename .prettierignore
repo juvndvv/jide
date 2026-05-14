@@ -8,3 +8,7 @@ coverage/
 design/
 .planning/
 .DS_Store
+# Spike scripts and CLI fixtures are throwaway tools / inert data.
+tests/spike/
+tests/fixtures/fake-claude.mjs
+tests/fixtures/claude-events/
