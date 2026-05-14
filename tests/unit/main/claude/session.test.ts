@@ -89,4 +89,54 @@ describe('ClaudeSession (with fake-claude)', () => {
     const code = await exited;
     expect(code).toBe(0);
   });
+
+  it('send() after natural exit emits an error snapshot, does not respawn', async () => {
+    const session = new ClaudeSession({
+      worktreeId: 'wt-1',
+      cwd: '/tmp',
+      argsBuilder: () => fakeClaudeArgs(SIMPLE),
+    });
+    const exited = new Promise<number | null>((r) => session.on('exit', r));
+    session.start();
+    await exited;
+    const snapsAfter: SessionSnapshot[] = [];
+    session.on('snapshot', (s) => snapsAfter.push(s as SessionSnapshot));
+    session.send('this should not respawn');
+    expect(snapsAfter).toHaveLength(1);
+    const last = snapsAfter[0]!;
+    expect(last.status).toBe('error');
+    expect(last.messages.some((m) => m.type === 'system' && m.level === 'error')).toBe(true);
+  });
+
+  it('start() after natural exit resets terminated and spawns again', async () => {
+    const session = new ClaudeSession({
+      worktreeId: 'wt-1',
+      cwd: '/tmp',
+      argsBuilder: () => fakeClaudeArgs(SIMPLE),
+    });
+    const firstExit = new Promise<number | null>((r) => session.once('exit', r));
+    session.start();
+    await firstExit;
+    const secondExit = new Promise<number | null>((r) => session.once('exit', r));
+    session.start();
+    const code = await secondExit;
+    expect(code).toBe(0);
+  });
+
+  it('spawn error surfaces a system error snapshot', async () => {
+    setClaudeBinaryForTests('/nonexistent/path/to/claude-binary-xyz');
+    try {
+      const session = new ClaudeSession({ worktreeId: 'wt-1', cwd: '/tmp' });
+      const snaps: SessionSnapshot[] = [];
+      session.on('snapshot', (s) => snaps.push(s as SessionSnapshot));
+      session.start();
+      await new Promise((r) => setTimeout(r, 300));
+      const errSnap = snaps.find((s) =>
+        s.messages.some((m) => m.type === 'system' && m.level === 'error'),
+      );
+      expect(errSnap).toBeDefined();
+    } finally {
+      setClaudeBinaryForTests('node');
+    }
+  });
 });
