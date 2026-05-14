@@ -26,3 +26,12 @@ body {
     sans-serif;
   overflow: hidden;
 }
+
+@keyframes jidePulse {
+  0% {
+    box-shadow: 0 0 0 0 #f95a5c77;
+  }
+  100% {
+    box-shadow: 0 0 0 8px #f95a5c00;
+  }
+}
