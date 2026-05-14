@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type { SessionSnapshot } from '@shared/session';
+import { useTheme } from '../../theme/useTheme';
 
 export interface SessionChipProps {
   snapshot: SessionSnapshot;
@@ -10,6 +11,7 @@ export interface SessionChipProps {
 }
 
 export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: SessionChipProps) {
+  const { theme, accent } = useTheme();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(snapshot.title);
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -42,12 +44,12 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
     snapshot.status === 'streaming';
 
   const statusColor = isRunning
-    ? '#F95A5C'
+    ? accent.value
     : snapshot.status === 'awaiting'
-      ? '#F59E0B'
+      ? theme.warning
       : snapshot.status === 'error'
-        ? '#ED5A46'
-        : '#B8B8B8';
+        ? theme.error
+        : theme.textDisabled;
 
   return (
     <div
@@ -63,8 +65,8 @@ export function SessionChip({ snapshot, active, onSelect, onRename, onClose }: S
         gap: 6,
         padding: '4px 10px',
         borderRadius: 999,
-        background: active ? '#000000' : '#00000008',
-        color: active ? '#FFFFFF' : '#000000B0',
+        background: active ? accent.value + '1F' : theme.hoverBg,
+        color: active ? theme.text : theme.textMed,
         fontSize: 12,
         cursor: editing ? 'text' : 'pointer',
         flexShrink: 0,

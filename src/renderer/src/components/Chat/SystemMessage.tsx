@@ -1,16 +1,17 @@
 import type { Message } from '@shared/session';
-
-const LEVEL_COLORS: Record<
-  Extract<Message, { type: 'system' }>['level'],
-  { bg: string; fg: string }
-> = {
-  info: { bg: '#F6F4EF', fg: '#00000080' },
-  warn: { bg: '#FEF3C7', fg: '#92400E' },
-  error: { bg: '#FFE5E5', fg: '#B40000' },
-};
+import { useTheme } from '../../theme/useTheme';
 
 export function SystemMessage({ message }: { message: Extract<Message, { type: 'system' }> }) {
-  const { bg, fg } = LEVEL_COLORS[message.level];
+  const { theme } = useTheme();
+
+  const colors: Record<Extract<Message, { type: 'system' }>['level'], { bg: string; fg: string }> =
+    {
+      info: { bg: theme.panelMuted, fg: theme.textMed },
+      warn: { bg: theme.warning + '1F', fg: theme.warning },
+      error: { bg: theme.error + '1F', fg: theme.error },
+    };
+
+  const { bg, fg } = colors[message.level];
   return (
     <div
       data-testid={`message-system-${message.id}`}
@@ -19,7 +20,7 @@ export function SystemMessage({ message }: { message: Extract<Message, { type: '
         alignSelf: 'stretch',
         background: bg,
         color: fg,
-        border: '1px solid #00000010',
+        border: `1px solid ${theme.borderHair}`,
         borderRadius: 6,
         padding: '6px 10px',
         marginBottom: 6,

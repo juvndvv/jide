@@ -1,6 +1,8 @@
 import type { Message } from '@shared/session';
+import { useTheme } from '../../theme/useTheme';
 
 export function ClaudeMessage({ message }: { message: Extract<Message, { type: 'claude' }> }) {
+  const { theme } = useTheme();
   const isThinking = message.thinking === true;
   return (
     <div
@@ -8,7 +10,7 @@ export function ClaudeMessage({ message }: { message: Extract<Message, { type: '
       style={{
         alignSelf: 'flex-start',
         maxWidth: '100%',
-        color: isThinking ? '#00000060' : '#1F1F1F',
+        color: isThinking ? theme.textMed : theme.text,
         fontSize: isThinking ? 12 : 13,
         fontStyle: isThinking ? 'italic' : 'normal',
         lineHeight: 1.5,

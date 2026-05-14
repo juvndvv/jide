@@ -1,4 +1,7 @@
+import { useTheme } from '../../theme/useTheme';
+
 export function StreamingIndicator() {
+  const { accent } = useTheme();
   return (
     <div
       data-testid="streaming-indicator"
@@ -17,7 +20,7 @@ export function StreamingIndicator() {
             width: 6,
             height: 6,
             borderRadius: 999,
-            background: '#00000060',
+            background: accent.value,
             animation: `jideBlink 1.4s ${i * 0.2}s ease-in-out infinite`,
           }}
         />

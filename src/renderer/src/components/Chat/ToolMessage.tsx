@@ -1,20 +1,22 @@
 import { useState } from 'react';
 import type { Message } from '@shared/session';
-
-const STATUS_COLORS: Record<Extract<Message, { type: 'tool' }>['status'], string> = {
-  pending: '#F59E0B',
-  approved: '#10B981',
-  denied: '#ED5A46',
-  running: '#3B82F6',
-  done: '#10B981',
-  error: '#ED5A46',
-};
+import { useTheme } from '../../theme/useTheme';
 
 export function ToolMessage({ message }: { message: Extract<Message, { type: 'tool' }> }) {
+  const { theme } = useTheme();
   const outputLines = (message.output ?? '').split('\n').filter(Boolean);
   const isShort = outputLines.length < 5;
   const [expanded, setExpanded] = useState(isShort);
-  const statusColor = STATUS_COLORS[message.status];
+
+  const statusColor =
+    message.status === 'running'
+      ? theme.info
+      : message.status === 'approved' || message.status === 'done'
+        ? theme.success
+        : message.status === 'denied' || message.status === 'error'
+          ? theme.error
+          : theme.warning;
+
   const inputPreview = formatInput(message.input);
 
   return (
@@ -23,8 +25,8 @@ export function ToolMessage({ message }: { message: Extract<Message, { type: 'to
       style={{
         alignSelf: 'flex-start',
         width: '100%',
-        background: '#F6F4EF',
-        border: '1px solid #00000010',
+        background: theme.panelMuted,
+        border: `1px solid ${theme.borderHair}`,
         borderRadius: 8,
         padding: '8px 12px',
         marginBottom: 6,
@@ -47,7 +49,7 @@ export function ToolMessage({ message }: { message: Extract<Message, { type: 'to
           textAlign: 'left',
           fontFamily: 'inherit',
           fontSize: 'inherit',
-          color: '#1F1F1F',
+          color: theme.text,
         }}
       >
         <span
@@ -64,7 +66,7 @@ export function ToolMessage({ message }: { message: Extract<Message, { type: 'to
         <span style={{ fontWeight: 600 }}>{message.name}</span>
         <span
           style={{
-            color: '#00000060',
+            color: theme.textMed,
             flex: 1,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -73,7 +75,7 @@ export function ToolMessage({ message }: { message: Extract<Message, { type: 'to
         >
           {inputPreview}
         </span>
-        <span style={{ color: '#00000060', fontSize: 11 }}>{message.status}</span>
+        <span style={{ color: theme.textMed, fontSize: 11 }}>{message.status}</span>
       </button>
       {expanded && message.output && (
         <pre
@@ -81,8 +83,8 @@ export function ToolMessage({ message }: { message: Extract<Message, { type: 'to
           style={{
             margin: '8px 0 0',
             padding: '8px 10px',
-            background: '#1F1F1F',
-            color: '#E5E7EB',
+            background: theme.text,
+            color: theme.panelMuted,
             borderRadius: 6,
             fontFamily: 'ui-monospace, monospace',
             fontSize: 11,

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTheme } from '../../theme/useTheme';
 
 export interface ApprovalBarProps {
   /** When null, the bar is hidden. */
@@ -16,6 +17,7 @@ export function ApprovalBar({
   onApprove,
   onReject,
 }: ApprovalBarProps) {
+  const { theme, accent } = useTheme();
   const [reason, setReason] = useState('');
   // Hidden when no tool is awaiting approval; lets callers mount unconditionally.
   // Phase 3 ships with bypassPermissions so this path never triggers at runtime.
@@ -28,12 +30,12 @@ export function ApprovalBar({
         alignItems: 'center',
         gap: 8,
         padding: '10px 12px',
-        background: '#FEF3C7',
-        borderTop: '1px solid #00000010',
+        background: theme.warning + '1F',
+        borderTop: `1px solid ${theme.borderHair}`,
         fontSize: 13,
       }}
     >
-      <span style={{ color: '#92400E', fontWeight: 600 }}>
+      <span style={{ color: theme.warning, fontWeight: 600 }}>
         {toolName ?? 'Tool'} awaiting approval
       </span>
       <input
@@ -45,7 +47,7 @@ export function ApprovalBar({
         style={{
           flex: 1,
           padding: '4px 8px',
-          border: '1px solid #00000018',
+          border: `1px solid ${theme.borderHair}`,
           borderRadius: 6,
           fontFamily: 'inherit',
           fontSize: 12,
@@ -57,9 +59,9 @@ export function ApprovalBar({
         onClick={() => onReject(awaitingToolUseId, reason)}
         style={{
           padding: '6px 12px',
-          border: '1px solid #ED5A46',
-          background: '#FFFFFF',
-          color: '#ED5A46',
+          border: `1px solid ${theme.error}`,
+          background: theme.panelBg,
+          color: theme.error,
           borderRadius: 6,
           fontFamily: 'inherit',
           fontSize: 12,
@@ -76,7 +78,7 @@ export function ApprovalBar({
         style={{
           padding: '6px 12px',
           border: 'none',
-          background: '#10B981',
+          background: accent.value,
           color: '#FFFFFF',
           borderRadius: 6,
           fontFamily: 'inherit',

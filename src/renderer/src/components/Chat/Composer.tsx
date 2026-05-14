@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, type KeyboardEvent } from 'react';
+import { useTheme } from '../../theme/useTheme';
 
 export interface ComposerProps {
   /** Called when user presses Enter (without Shift). Empty text is ignored. */
@@ -10,6 +11,7 @@ export interface ComposerProps {
 }
 
 export function Composer({ onSubmit, disabled, placeholder }: ComposerProps) {
+  const { theme, accent } = useTheme();
   const [text, setText] = useState('');
   const ref = useRef<HTMLTextAreaElement | null>(null);
 
@@ -44,8 +46,8 @@ export function Composer({ onSubmit, disabled, placeholder }: ComposerProps) {
         alignItems: 'flex-end',
         gap: 8,
         padding: '8px 12px',
-        borderTop: '1px solid #00000010',
-        background: '#FFFFFF',
+        borderTop: `1px solid ${theme.borderHair}`,
+        background: theme.panelBg,
       }}
     >
       <textarea
@@ -60,15 +62,15 @@ export function Composer({ onSubmit, disabled, placeholder }: ComposerProps) {
         style={{
           flex: 1,
           resize: 'none',
-          border: '1px solid #00000018',
+          border: `1px solid ${theme.borderHair}`,
           borderRadius: 8,
           padding: '8px 10px',
           fontFamily: 'inherit',
           fontSize: 13,
           lineHeight: 1.45,
           outline: 'none',
-          background: disabled ? '#F6F4EF' : '#FFFFFF',
-          color: '#1F1F1F',
+          background: disabled ? theme.panelMuted : theme.inputBg,
+          color: theme.text,
           maxHeight: 200,
           overflow: 'auto',
         }}
@@ -83,7 +85,7 @@ export function Composer({ onSubmit, disabled, placeholder }: ComposerProps) {
           padding: '0 14px',
           borderRadius: 8,
           border: 'none',
-          background: disabled || !text.trim() ? '#00000020' : '#F95A5C',
+          background: disabled || !text.trim() ? theme.hoverBg : accent.value,
           color: '#FFFFFF',
           fontFamily: 'inherit',
           fontSize: 13,

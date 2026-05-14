@@ -1,9 +1,12 @@
+import { useTheme } from '../../theme/useTheme';
+
 export interface EmptySessionsProps {
   onCreate: () => void;
   disabled: boolean;
 }
 
 export function EmptySessions({ onCreate, disabled }: EmptySessionsProps) {
+  const { theme, accent } = useTheme();
   return (
     <div
       data-testid="empty-sessions"
@@ -14,7 +17,7 @@ export function EmptySessions({ onCreate, disabled }: EmptySessionsProps) {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 12,
-        color: '#00000060',
+        color: theme.textMed,
         fontFamily: 'ui-monospace, monospace',
         fontSize: 13,
       }}
@@ -27,9 +30,9 @@ export function EmptySessions({ onCreate, disabled }: EmptySessionsProps) {
         onClick={onCreate}
         style={{
           padding: '8px 16px',
-          border: '1px solid #000000',
+          border: 'none',
           borderRadius: 6,
-          background: '#000000',
+          background: accent.value,
           color: '#FFFFFF',
           fontFamily: 'inherit',
           fontSize: 12,
