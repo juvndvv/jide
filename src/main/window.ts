@@ -23,6 +23,7 @@ export function createMainWindow(): BrowserWindow {
     },
   });
 
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.once('ready-to-show', () => win.show());
 
   if (process.env.ELECTRON_RENDERER_URL) {

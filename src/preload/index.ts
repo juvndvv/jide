@@ -1,1 +1,2 @@
-// Bridge entre main y renderer. Se rellenará en Task 5.
+// IPC bridge between main and renderer. Populated in Task 5.
+export {};
