@@ -84,7 +84,7 @@ export function StatusBar({ project, worktree, terminalSplit = 'off', onToggleTe
         }}
       >
         <JIcon
-          name={terminalSplit === 'bottom' ? 'split-v' : terminalSplit === 'side' ? 'split-h' : 'terminal'}
+          name={terminalSplit === 'bottom' ? 'split-h' : terminalSplit === 'side' ? 'split-v' : 'terminal'}
           size={11}
         />
         <span>Term</span>
