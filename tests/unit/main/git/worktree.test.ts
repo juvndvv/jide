@@ -40,7 +40,7 @@ describe('listWorktrees', () => {
     repo.run('git', ['worktree', 'add', '--detach', detached, sha]);
 
     const wts = await listWorktrees(repo.cwd);
-    const det = wts.find((w) => w.path.endsWith('detached'));
+    const det = wts.find((w) => w.path.endsWith('/detached'));
     expect(det?.branch).toBeNull();
   });
 });
@@ -149,7 +149,7 @@ describe('worktreeAdd / worktreeRemove (roundtrip)', () => {
     await worktreeAdd(repo.cwd, { branch: 'feat/y', path: target });
 
     const wts = await listWorktrees(repo.cwd);
-    expect(wts.some((w) => w.branch === 'feat/y' && w.path.endsWith('roundtrip-y'))).toBe(true);
+    expect(wts.some((w) => w.branch === 'feat/y' && w.path.endsWith('/roundtrip-y'))).toBe(true);
   });
 
   it('creates a new worktree with a new branch (-b)', async () => {

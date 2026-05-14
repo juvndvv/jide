@@ -10,5 +10,5 @@ export async function listBranches(repoRoot: string): Promise<string[]> {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean)
-    .sort((a, b) => a.localeCompare(b));
+    .sort();
 }
