@@ -1,4 +1,5 @@
 import { createHandler } from './register.js';
+import { sendEvent } from './events.js';
 import { createGitClient } from '../git/index.js';
 import type { ProjectRegistry } from '../projects/index.js';
 
@@ -21,11 +22,14 @@ export function registerWorktrees(registry: ProjectRegistry): void {
 
   createHandler('worktrees:add', async ({ projectId, branch, baseBranch, path }) => {
     const client = createGitClient(projectPath(projectId));
-    return client.addWorktree({ branch, baseBranch, path });
+    const newWorktree = await client.addWorktree({ branch, baseBranch, path });
+    sendEvent('worktrees:changed', { projectId, worktrees: await client.worktrees() });
+    return newWorktree;
   });
 
   createHandler('worktrees:remove', async ({ projectId, worktreePath }) => {
     const client = createGitClient(projectPath(projectId));
     await client.removeWorktree(worktreePath);
+    sendEvent('worktrees:changed', { projectId, worktrees: await client.worktrees() });
   });
 }

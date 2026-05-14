@@ -140,7 +140,9 @@ describe('shared/project — type contract', () => {
 describe('shared/ipc — events drift guards', () => {
   it('EVENTS includes phase-2 push channels and is frozen', () => {
     expect(Object.isFrozen(EVENTS)).toBe(true);
-    expect([...EVENTS].sort()).toEqual(['projects:changed', 'worktrees:status-changed'].sort());
+    expect([...EVENTS].sort()).toEqual(
+      ['projects:changed', 'worktrees:status-changed', 'worktrees:changed'].sort(),
+    );
   });
 
   it('Event union equals keyof EventMap', () => {
@@ -155,6 +157,13 @@ describe('shared/ipc — events drift guards', () => {
     expectTypeOf<EventPayload<'worktrees:status-changed'>>().toEqualTypeOf<{
       projectId: string;
       worktree: Worktree;
+    }>();
+  });
+
+  it('worktrees:changed payload is project-scoped list', () => {
+    expectTypeOf<EventPayload<'worktrees:changed'>>().toEqualTypeOf<{
+      projectId: string;
+      worktrees: Worktree[];
     }>();
   });
 });

@@ -26,13 +26,20 @@ export function useWorktrees(projectId: string | null): UseWorktrees {
     setLoading(true);
     void refresh();
     if (!projectId) return;
-    const off = window.jide.on('worktrees:status-changed', (payload) => {
+    const offStatus = window.jide.on('worktrees:status-changed', (payload) => {
       if (payload.projectId !== projectId) return;
       setWorktrees((prev) =>
         prev.map((w) => (w.path === payload.worktree.path ? payload.worktree : w)),
       );
     });
-    return off;
+    const offChanged = window.jide.on('worktrees:changed', (payload) => {
+      if (payload.projectId !== projectId) return;
+      setWorktrees(payload.worktrees);
+    });
+    return () => {
+      offStatus();
+      offChanged();
+    };
   }, [projectId, refresh]);
 
   return { worktrees, loading, refresh };

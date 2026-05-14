@@ -40,12 +40,17 @@ export type ChannelMap = {
 export type Req<C extends Channel> = ChannelMap[C]['req'];
 export type Res<C extends Channel> = ChannelMap[C]['res'];
 
-export const EVENTS = ['projects:changed', 'worktrees:status-changed'] as const;
+export const EVENTS = [
+  'projects:changed',
+  'worktrees:status-changed',
+  'worktrees:changed',
+] as const;
 export type Event = (typeof EVENTS)[number];
 
 export type EventMap = {
   'projects:changed': Project[];
   'worktrees:status-changed': { projectId: string; worktree: Worktree };
+  'worktrees:changed': { projectId: string; worktrees: Worktree[] };
 };
 
 export type EventPayload<E extends Event> = EventMap[E];
