@@ -9,7 +9,7 @@
 | 1 — App skeleton | ✅ Mergeable (PR #1) | `.planning/plans/2026-05-14-fase-1-app-skeleton.md` |
 | 2 — Proyectos & worktrees | ✅ Mergeable (PR #2) | `.planning/plans/2026-05-14-fase-2-proyectos-worktrees.md` |
 | 3 — Sesión Claude end-to-end | ✅ Mergeable (PR pending) | `.planning/plans/2026-05-14-fase-3-sesion-claude.md` |
-| 4 — Multi-sesión por worktree | 🗒 Outline | — |
+| 4 — Multi-sesión por worktree | 📝 Plan listo | `.planning/plans/2026-05-14-fase-4-multi-sesion.md` |
 | 5 — Tabs + UI shell | 🗒 Outline | — |
 | 6 — Terminal split | 🗒 Outline | — |
 | 7 — File viewer + watcher | 🗒 Outline | — |
