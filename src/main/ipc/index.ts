@@ -1,8 +1,16 @@
 import type { JideStore } from '../store/index.js';
+import type { ProjectRegistry } from '../projects/index.js';
 import { registerPing } from './ping.js';
 import { registerSettings } from './settings.js';
+import { registerProjects } from './projects.js';
 
-export function registerAllHandlers(store: JideStore): void {
+export interface IpcDeps {
+  store: JideStore;
+  registry: ProjectRegistry;
+}
+
+export function registerAllHandlers(deps: IpcDeps): void {
   registerPing();
-  registerSettings(store);
+  registerSettings(deps.store);
+  registerProjects(deps.registry);
 }
