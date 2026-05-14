@@ -10,8 +10,8 @@
 | 2 — Proyectos & worktrees | ✅ Mergeable (PR #2) | `.planning/plans/2026-05-14-fase-2-proyectos-worktrees.md` |
 | 3 — Sesión Claude end-to-end | ✅ Mergeable (PR pending) | `.planning/plans/2026-05-14-fase-3-sesion-claude.md` |
 | 4 — Multi-sesión por worktree | ✅ Mergeable (PR #4) | `.planning/plans/2026-05-14-fase-4-multi-sesion.md` |
-| 5 — Tabs + UI shell | 📝 Plan listo | `.planning/plans/2026-05-14-fase-5-tabs-ui-shell.md` |
-| 6 — Terminal split | 🗒 Outline | — |
+| 5 — Tabs + UI shell | ✅ Mergeable (PR #5) | `.planning/plans/2026-05-14-fase-5-tabs-ui-shell.md` |
+| 6 — Terminal split | 🗒 Outline (siguiente) | — |
 | 7 — File viewer + watcher | 🗒 Outline | — |
 | 8 — Command palette + atajos | 🗒 Outline | — |
 | 9 — Polish & packaging | 🗒 Outline | — |
