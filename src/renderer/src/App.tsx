@@ -4,14 +4,17 @@ import { ChatPanel } from './components/Chat';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { TopChromeStrip } from './components/Chrome/TopChromeStrip';
 import { StatusBar } from './components/StatusBar/StatusBar';
+import { TabBar } from './components/TabBar';
 import { useProjects } from './shortcuts/useProjects';
+import { useAllWorktrees } from './shortcuts/useAllWorktrees';
+import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
 
 export function App(): JSX.Element {
   const { theme, sidebarSide } = useTheme();
   const { projects, add, toggleExpanded } = useProjects();
-  const [activeWorktreeId, setActiveWorktreeId] = useState<string | null>(null);
-  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const { worktreesById } = useAllWorktrees(projects);
+  const { tabs, activeWorktreeId, open, close } = useTabs({ projects, worktreesById });
   const [dialogOpenFor, setDialogOpenFor] = useState<string | null>(null);
   const [maxSessions, setMaxSessions] = useState<number>(4);
 
@@ -24,7 +27,9 @@ export function App(): JSX.Element {
       });
   }, []);
 
-  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null;
+  const activeTab = tabs.find((t) => t.worktreeId === activeWorktreeId) ?? null;
+  const activeProject = activeTab ? (projects.find((p) => p.id === activeTab.projectId) ?? null) : null;
+  const activeWt = activeWorktreeId ? (worktreesById.get(activeWorktreeId) ?? null) : null;
 
   return (
     <div
@@ -36,7 +41,7 @@ export function App(): JSX.Element {
         color: theme.text,
       }}
     >
-      <TopChromeStrip project={activeProject} worktree={null} />
+      <TopChromeStrip project={activeProject} worktree={activeWt} />
       <div
         style={{
           flex: 1,
@@ -50,9 +55,8 @@ export function App(): JSX.Element {
           activeWorktreeId={activeWorktreeId}
           onToggleProject={toggleExpanded}
           onSelectWorktree={(id) => {
-            setActiveWorktreeId(id);
             const matched = projects.find((p) => id.startsWith(`${p.path}:`));
-            if (matched) setActiveProjectId(matched.id);
+            if (matched) open(id, matched.id);
           }}
           onAddProject={() => {
             add().catch((err: unknown) => {
@@ -60,7 +64,7 @@ export function App(): JSX.Element {
             });
           }}
           onNewWorktree={() => {
-            if (activeProjectId) setDialogOpenFor(activeProjectId);
+            if (activeProject) setDialogOpenFor(activeProject.id);
             else if (projects[0]) setDialogOpenFor(projects[0].id);
           }}
         />
@@ -74,10 +78,22 @@ export function App(): JSX.Element {
             background: theme.panelBg,
           }}
         >
+          <TabBar
+            tabs={tabs}
+            projects={projects}
+            worktreesById={worktreesById}
+            activeWorktreeId={activeWorktreeId}
+            onSelect={(wid, pid) => open(wid, pid)}
+            onClose={close}
+            onNew={() => {
+              if (activeProject) setDialogOpenFor(activeProject.id);
+              else if (projects[0]) setDialogOpenFor(projects[0].id);
+            }}
+          />
           <ChatPanel worktreeId={activeWorktreeId} maxSessionsPerWorktree={maxSessions} />
         </main>
       </div>
-      <StatusBar project={activeProject} worktree={null} />
+      <StatusBar project={activeProject} worktree={activeWt} />
 
       {dialogOpenFor && (
         <NewWorktreeDialog
