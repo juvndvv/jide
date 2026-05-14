@@ -104,9 +104,14 @@ function mergeLeafInner(tree: PaneSplit, leafId: string): PaneTree | null {
   return null;
 }
 
-export function assignSession(tree: PaneTree, leafId: string, sessionId: string | null): PaneTree {
+export function assignSession(
+  tree: PaneTree,
+  leafId: string,
+  sessionId: string | null,
+  exclusive = true,
+): PaneTree {
   if (findLeaf(tree, leafId) === null) return tree;
-  const cleared = sessionId !== null ? clearSession(tree, sessionId) : tree;
+  const cleared = exclusive && sessionId !== null ? clearSession(tree, sessionId) : tree;
   return applySession(cleared, leafId, sessionId);
 }
 

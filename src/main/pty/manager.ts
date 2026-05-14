@@ -56,11 +56,20 @@ export class PtyManager extends EventEmitter {
     return [...this.active.keys()];
   }
 
+  // Test-only: override the shell command with a Node script when JIDE_TEST_PTY_BIN is set.
+  private resolveCommand(): { command: string; args: string[] } {
+    const overridePath = process.env.JIDE_TEST_PTY_BIN;
+    if (overridePath) {
+      return { command: process.execPath, args: [overridePath] };
+    }
+    return this.detector();
+  }
+
   create(args: CreateArgs): { pid: number } {
     if (!this.pty) throw new Error('PtyManager not initialised');
     const existing = this.active.get(args.worktreeId);
     if (existing) return { pid: existing.process.pid };
-    const shell = this.detector();
+    const shell = this.resolveCommand();
     const proc = this.pty.spawn(shell.command, shell.args, {
       cwd: args.cwd,
       cols: Math.max(1, Math.floor(args.cols)),

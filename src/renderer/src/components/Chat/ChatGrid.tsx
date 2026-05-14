@@ -42,7 +42,7 @@ function renderNode(
           ops.splitActivePane('v');
         }}
         onClose={() => ops.mergePane(node.id)}
-        onAssignSession={(sessionId) => ops.assignToPane(node.id, sessionId)}
+        onAssignSession={(sessionId) => ops.dropToPane(node.id, sessionId)}
       />
     );
   }

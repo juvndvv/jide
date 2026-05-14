@@ -19,6 +19,8 @@ export interface WorktreeLayoutOps {
   splitActivePane: (axis: PaneAxis) => void;
   mergePane: (leafId: string) => void;
   assignToPane: (leafId: string, sessionId: string | null) => void;
+  /** Like assignToPane but allows the same session in multiple panes (used for drag-and-drop). */
+  dropToPane: (leafId: string, sessionId: string) => void;
   setActivePane: (leafId: string) => void;
   toggleSplitAxis: (splitId: string) => void;
   setSplitRatio: (splitId: string, ratio: number) => void;
@@ -144,6 +146,20 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
     [worktreeId],
   );
 
+  const dropToPane = useCallback(
+    (leafId: string, sessionId: string) => {
+      setLayout((prev) => {
+        // Non-exclusive: allows the same session in multiple panes.
+        const nextPanes = assignSession(prev.panes, leafId, sessionId, false);
+        if (nextPanes === prev.panes) return prev;
+        const next: WorktreeLayout = { ...prev, panes: nextPanes };
+        schedulePersist(worktreeId, next);
+        return next;
+      });
+    },
+    [worktreeId],
+  );
+
   const setActivePane = useCallback(
     (leafId: string) => {
       setLayout((prev) => {
@@ -245,6 +261,7 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
       splitActivePane,
       mergePane,
       assignToPane,
+      dropToPane,
       setActivePane,
       toggleSplitAxis,
       setSplitRatio,
@@ -258,6 +275,7 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
       splitActivePane,
       mergePane,
       assignToPane,
+      dropToPane,
       setActivePane,
       toggleSplitAxis,
       setSplitRatio,

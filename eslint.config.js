@@ -17,6 +17,7 @@ export default tseslint.config(
       // Spike scripts are one-off Node tools, not production code or tests.
       'tests/spike/',
       'tests/fixtures/fake-claude.mjs',
+      'tests/fixtures/echo-shell.mjs',
     ],
   },
   js.configs.recommended,

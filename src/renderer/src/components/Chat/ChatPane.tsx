@@ -27,7 +27,7 @@ export interface ChatPaneProps {
 export function ChatPane(props: ChatPaneProps): JSX.Element {
   const { worktreeId, sessionId } = props;
   const { theme } = useTheme();
-  const { snapshot, send, approveTool } = useSession(worktreeId, sessionId);
+  const { snapshot, send, approveTool, kill } = useSession(worktreeId, sessionId);
   const listRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -66,6 +66,45 @@ export function ChatPane(props: ChatPaneProps): JSX.Element {
       ) : (
         <>
           <SessionMeta snapshot={snapshot} />
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '2px 12px',
+              fontSize: 11,
+              color: theme.textMed,
+              borderBottom: `1px solid ${theme.borderHair}`,
+              background: theme.hoverBg,
+              flexShrink: 0,
+            }}
+          >
+            <span data-testid="chat-status">{snapshot.status}</span>
+            <span style={{ flex: 1 }} />
+            {isBusy(snapshot.status) && (
+              <button
+                type="button"
+                data-testid="chat-kill"
+                onClick={() => {
+                  kill().catch((err: unknown) => {
+                    console.error('[jide] sessions:kill failed', err);
+                  });
+                }}
+                style={{
+                  border: 'none',
+                  background: theme.error,
+                  color: '#fff',
+                  cursor: 'pointer',
+                  padding: '2px 8px',
+                  borderRadius: 4,
+                  fontSize: 11,
+                  fontFamily: 'inherit',
+                }}
+              >
+                Stop
+              </button>
+            )}
+          </div>
           <div
             ref={listRef}
             data-testid="pane-messages"
