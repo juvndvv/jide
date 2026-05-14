@@ -132,7 +132,6 @@ export function applyEvent(prev: SessionSnapshot, event: StreamEvent): SessionSn
           status: nextStatus,
           model: event.model ?? prev.model,
           cwd: event.cwd ?? prev.cwd,
-          id: { ...prev.id, uuid: event.session_id ?? prev.id.uuid },
         };
       }
       if (event.subtype === 'status') {

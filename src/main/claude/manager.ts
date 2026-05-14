@@ -67,9 +67,18 @@ export class SessionManager extends EventEmitter {
     return this.listForWorktree(worktreeId).map((s) => s.snapshot());
   }
 
+  /**
+   * User-initiated close. Kills the underlying process AND drops the
+   * session from the manager so its chip disappears from the strip.
+   * Natural CLI exits (e.g. after a `result` event) leave the session
+   * in the map with status='exited' so the user can keep the transcript
+   * visible and respawn the conversation with another send().
+   */
   killById(worktreeId: string, sessionUuid: string): void {
     const session = this.getById(worktreeId, sessionUuid);
-    if (session) session.kill();
+    if (!session) return;
+    session.kill();
+    this.drop(worktreeId, session);
   }
 
   killAll(): void {
@@ -101,7 +110,6 @@ export class SessionManager extends EventEmitter {
         sessions: this.snapshotsForWorktree(opts.worktreeId),
       });
     });
-    session.on('exit', () => this.drop(opts.worktreeId, session));
     return session;
   }
 
