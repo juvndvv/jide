@@ -7,5 +7,7 @@ export { SystemMessage } from './SystemMessage';
 export { StreamingIndicator } from './StreamingIndicator';
 export { Composer } from './Composer';
 export { ApprovalBar } from './ApprovalBar';
+export { ChatPanel } from './ChatPanel';
 export type { ComposerProps } from './Composer';
 export type { ApprovalBarProps } from './ApprovalBar';
+export type { ChatPanelProps } from './ChatPanel';
