@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { useTheme } from '../../theme/useTheme';
 
 export function SidebarSection({
   label,
@@ -9,6 +10,7 @@ export function SidebarSection({
   children: ReactNode;
   style?: CSSProperties;
 }) {
+  const { theme } = useTheme();
   return (
     <div style={{ marginBottom: 8, ...style }}>
       <div
@@ -18,7 +20,7 @@ export function SidebarSection({
           fontWeight: 600,
           letterSpacing: 0.6,
           textTransform: 'uppercase',
-          color: '#00000060',
+          color: theme.textMed,
         }}
       >
         {label}
