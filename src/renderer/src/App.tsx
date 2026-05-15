@@ -10,14 +10,22 @@ import { useAllWorktrees } from './shortcuts/useAllWorktrees';
 import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
 import { useGlobalShortcuts, useLegacyGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
-import { ShortcutContextProvider } from './shortcuts/ShortcutContext';
+import { ShortcutContextProvider, useSetModalOpen } from './shortcuts/ShortcutContext';
+import { useShortcutAction } from './shortcuts/useShortcutAction';
 import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
 import { OpenFileProvider } from './components/Chat/OpenFileContext';
+import {
+  OverlayStackProvider,
+  useModalOpen,
+  useOverlayStack,
+} from './overlay/OverlayStackContext';
 
 export function App(): JSX.Element {
   return (
     <ShortcutContextProvider>
-      <AppInner />
+      <OverlayStackProvider>
+        <AppInner />
+      </OverlayStackProvider>
     </ShortcutContextProvider>
   );
 }
@@ -86,6 +94,16 @@ function AppInner(): JSX.Element {
 
   useGlobalShortcuts();
   useLegacyGlobalShortcuts(handlers);
+
+  const stack = useOverlayStack();
+  const modalOpen = useModalOpen();
+  const setModalOpen = useSetModalOpen();
+  useEffect(() => {
+    setModalOpen(modalOpen);
+  }, [modalOpen, setModalOpen]);
+  useShortcutAction('overlay.close', () => {
+    stack.getTopOnEsc()?.();
+  });
 
   return (
     <div
