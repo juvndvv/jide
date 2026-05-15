@@ -69,7 +69,7 @@ export function registerFilesHandlers(
       void (async () => {
         try {
           const map = await loadStatus(worktreePath);
-          const prev = statusCache.get(worktreeId) ?? new Map();
+          const prev = statusCache.get(worktreeId) ?? new Map<string, GitFileStatus>();
           const changes: Record<string, GitFileStatus> = {};
           for (const [p, s] of map) if (prev.get(p) !== s) changes[p] = s;
           for (const [p] of prev) if (!map.has(p)) changes[p] = null;
