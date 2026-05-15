@@ -159,7 +159,7 @@ describe('CommandPalette', () => {
     );
 
     const palette = screen.getByTestId('command-palette');
-    expect(palette.textContent).toContain('meta+k');
+    expect(palette.textContent).toContain('meta+n');
     expect(palette.textContent).toContain('meta+,');
   });
 

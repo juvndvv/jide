@@ -11,7 +11,10 @@ interface Props {
 export function PaletteActionsGroup({ onSelect }: Props): JSX.Element | null {
   const ctx = useShortcutContext();
   const dispatcher = useShortcutDispatcher();
-  const items = keymap.filter((b) => b.paletteLabel !== undefined && b.when(ctx));
+  const paletteCtx = { ...ctx, modalOpen: false, topOverlayId: null };
+  const items = keymap.filter(
+    (b) => b.paletteLabel !== undefined && b.id !== 'palette.open' && b.when(paletteCtx),
+  );
   if (items.length === 0) return null;
   return (
     <Command.Group heading="Acciones">
