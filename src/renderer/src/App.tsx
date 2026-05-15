@@ -9,11 +9,20 @@ import { useProjects } from './shortcuts/useProjects';
 import { useAllWorktrees } from './shortcuts/useAllWorktrees';
 import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
-import { useGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
+import { useGlobalShortcuts, useLegacyGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
+import { ShortcutContextProvider } from './shortcuts/ShortcutContext';
 import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
 import { OpenFileProvider } from './components/Chat/OpenFileContext';
 
 export function App(): JSX.Element {
+  return (
+    <ShortcutContextProvider>
+      <AppInner />
+    </ShortcutContextProvider>
+  );
+}
+
+function AppInner(): JSX.Element {
   const { theme, sidebarSide } = useTheme();
   const { projects, add, toggleExpanded } = useProjects();
   const { worktreesById } = useAllWorktrees(projects);
@@ -32,7 +41,9 @@ export function App(): JSX.Element {
   }, []);
 
   const activeTab = tabs.find((t) => t.worktreeId === activeWorktreeId) ?? null;
-  const activeProject = activeTab ? (projects.find((p) => p.id === activeTab.projectId) ?? null) : null;
+  const activeProject = activeTab
+    ? (projects.find((p) => p.id === activeTab.projectId) ?? null)
+    : null;
   const activeWt = activeWorktreeId ? (worktreesById.get(activeWorktreeId) ?? null) : null;
 
   const { layout, ops } = useWorktreeLayout(activeWorktreeId);
@@ -40,7 +51,8 @@ export function App(): JSX.Element {
   const onOpenFile = useCallback(
     (toolPath: string) => {
       if (!activeWorktreeId) return;
-      window.jide.files.openInViewer(activeWorktreeId, toolPath)
+      window.jide.files
+        .openInViewer(activeWorktreeId, toolPath)
         .then((res) => {
           if (!res) {
             console.warn('[jide] tool message path outside worktree:', toolPath);
@@ -72,7 +84,8 @@ export function App(): JSX.Element {
     [activeProject, projects, dialogOpenFor, tweaksOpen, ops],
   );
 
-  useGlobalShortcuts(handlers);
+  useGlobalShortcuts();
+  useLegacyGlobalShortcuts(handlers);
 
   return (
     <div
