@@ -12,10 +12,13 @@ export interface FileWatcherOptions {
   repoRoot: string;
   onEvent: (event: FileChangeEvent) => void;
   debounceMs?: number;
+  /** Use polling instead of native FSEvents — more reliable in test environments. */
+  usePolling?: boolean;
 }
 
 export interface FileWatcherHandle {
   dispose: () => Promise<void>;
+  ready: Promise<void>;
 }
 
 const EVENT_MAP: Record<string, FileChangeKind> = {
@@ -60,6 +63,7 @@ export function createFileWatcher(opts: FileWatcherOptions): FileWatcherHandle {
     ignoreInitial: true,
     persistent: true,
     depth: 10,
+    usePolling: opts.usePolling ?? false,
   });
 
   watcher.on('add', handle('add'));
@@ -71,7 +75,12 @@ export function createFileWatcher(opts: FileWatcherOptions): FileWatcherHandle {
     console.error('[files/watcher] error', err);
   });
 
+  const ready = new Promise<void>((resolve) => {
+    watcher.once('ready', () => resolve());
+  });
+
   return {
+    ready,
     async dispose() {
       disposed = true;
       if (timer) clearTimeout(timer);
