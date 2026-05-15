@@ -52,6 +52,9 @@ describe('shared/ipc — runtime', () => {
         'terminal:write',
         'terminal:resize',
         'terminal:kill',
+        'files:tree',
+        'files:read',
+        'files:open-in-viewer',
       ].sort(),
     );
   });
@@ -231,6 +234,8 @@ describe('shared/ipc — events drift guards', () => {
         'sessions:list-changed',
         'terminal:data',
         'terminal:exit',
+        'files:change',
+        'files:status-changed',
       ].sort(),
     );
   });

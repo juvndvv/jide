@@ -26,6 +26,15 @@ export interface PaneSplit {
 
 export type PaneTree = PaneLeaf | PaneSplit;
 
+export interface ViewerState {
+  /** Whether the viewer panel is open in this worktree. */
+  open: boolean;
+  /** Active file (POSIX relPath). null = tree visible, content area shows EmptyViewer. */
+  path: string | null;
+  /** Ratio of viewer column vs the rest (0..1). Default 0.28. */
+  ratio: number;
+}
+
 export interface WorktreeLayout {
   /** Binary tree of chat panes. Always non-empty (initial state: single empty leaf). */
   panes: PaneTree;
@@ -35,6 +44,8 @@ export interface WorktreeLayout {
   terminal: TerminalSplit;
   /** Ratio chat-vs-terminal (0..1). Only relevant when terminal !== 'off'. */
   terminalRatio: number;
+  /** File viewer state — third layout axis alongside panes and terminal. */
+  viewer: ViewerState;
 }
 
 export const MAX_CHAT_PANES = 4;
@@ -42,7 +53,36 @@ export const MAX_CHAT_PANES = 4;
 export function makeEmptyLayout(): WorktreeLayout {
   const id = newId();
   const leaf: PaneLeaf = { kind: 'leaf', id, sessionId: null };
-  return { panes: leaf, activePaneId: id, terminal: 'off', terminalRatio: 0.6 };
+  return {
+    panes: leaf,
+    activePaneId: id,
+    terminal: 'off',
+    terminalRatio: 0.6,
+    viewer: { open: false, path: null, ratio: 0.28 },
+  };
+}
+
+export function openViewer(layout: WorktreeLayout, path: string | null): WorktreeLayout {
+  return { ...layout, viewer: { ...layout.viewer, open: true, path } };
+}
+
+export function closeViewer(layout: WorktreeLayout): WorktreeLayout {
+  if (!layout.viewer.open) return layout;
+  return { ...layout, viewer: { ...layout.viewer, open: false } };
+}
+
+export function toggleViewer(layout: WorktreeLayout): WorktreeLayout {
+  return layout.viewer.open ? closeViewer(layout) : openViewer(layout, layout.viewer.path);
+}
+
+export function setViewerPath(layout: WorktreeLayout, path: string | null): WorktreeLayout {
+  return { ...layout, viewer: { ...layout.viewer, path } };
+}
+
+export function setViewerRatio(layout: WorktreeLayout, ratio: number): WorktreeLayout {
+  const clamped = Math.min(0.6, Math.max(0.15, ratio));
+  if (layout.viewer.ratio === clamped) return layout;
+  return { ...layout, viewer: { ...layout.viewer, ratio: clamped } };
 }
 
 export function countLeaves(tree: PaneTree): number {
