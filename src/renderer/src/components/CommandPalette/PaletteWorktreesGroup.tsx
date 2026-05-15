@@ -42,8 +42,8 @@ export function PaletteWorktreesGroup({
           value={`${project.name} / ${wt.branch}`}
           keywords={[wt.path, wt.id, project.name, wt.branch]}
           onSelect={() => {
-            onOpen(wt.id, project.id);
             onSelect();
+            onOpen(wt.id, project.id);
           }}
           style={{
             display: 'flex',

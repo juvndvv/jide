@@ -21,8 +21,8 @@ export function PaletteActionsGroup({ onSelect }: Props): JSX.Element | null {
           value={b.paletteLabel ?? b.id}
           keywords={[b.id, b.paletteHint ?? '', b.paletteGroup ?? '']}
           onSelect={() => {
-            dispatcher.dispatch(b.id);
             onSelect();
+            dispatcher.dispatch(b.id);
           }}
           style={{
             display: 'flex',
