@@ -5,6 +5,7 @@ import { Overlay } from '../../overlay/Overlay';
 import { useTheme } from '../../theme/useTheme';
 import { normalize } from './normalize';
 import { PaletteActionsGroup } from './PaletteActionsGroup';
+import { PaletteFilesGroup } from './PaletteFilesGroup';
 import { PaletteWorktreesGroup } from './PaletteWorktreesGroup';
 
 interface CommandPaletteProps {
@@ -13,6 +14,8 @@ interface CommandPaletteProps {
   projects: Project[];
   worktreesById: ReadonlyMap<string, Worktree>;
   onOpenWorktree: (worktreeId: string, projectId: string) => void;
+  activeWorktreeId: string | null;
+  onOpenFile: (relPath: string) => void;
 }
 
 export function CommandPalette({
@@ -21,6 +24,8 @@ export function CommandPalette({
   projects,
   worktreesById,
   onOpenWorktree,
+  activeWorktreeId,
+  onOpenFile,
 }: CommandPaletteProps): JSX.Element | null {
   const { theme } = useTheme();
   const [query, setQuery] = useState('');
@@ -87,7 +92,12 @@ export function CommandPalette({
               onOpen={onOpenWorktree}
               onSelect={onClose}
             />
-            {/* PaletteFilesGroup arrives in Task 7 */}
+            <PaletteFilesGroup
+              worktreeId={activeWorktreeId}
+              query={query}
+              onOpen={onOpenFile}
+              onSelect={onClose}
+            />
           </Command.List>
         </Command>
       </div>

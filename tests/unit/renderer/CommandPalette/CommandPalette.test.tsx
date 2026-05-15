@@ -131,6 +131,8 @@ describe('CommandPalette', () => {
           projects={[project]}
           worktreesById={worktreesById}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -150,6 +152,8 @@ describe('CommandPalette', () => {
           projects={[]}
           worktreesById={new Map()}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -169,6 +173,8 @@ describe('CommandPalette', () => {
           projects={[]}
           worktreesById={new Map()}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -200,6 +206,8 @@ describe('CommandPalette', () => {
           projects={[project]}
           worktreesById={worktreesById}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -223,6 +231,8 @@ describe('CommandPalette', () => {
           projects={[]}
           worktreesById={new Map()}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -256,6 +266,8 @@ describe('CommandPalette', () => {
           projects={[project]}
           worktreesById={worktreesById}
           onOpenWorktree={onOpenWorktree}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
@@ -282,6 +294,8 @@ describe('CommandPalette', () => {
           projects={[]}
           worktreesById={new Map()}
           onOpenWorktree={vi.fn()}
+          activeWorktreeId={null}
+          onOpenFile={vi.fn()}
         />
       </Providers>,
     );
