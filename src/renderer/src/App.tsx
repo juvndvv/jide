@@ -14,6 +14,8 @@ import { ShortcutContextProvider, useSetModalOpen } from './shortcuts/ShortcutCo
 import { useShortcutAction } from './shortcuts/useShortcutAction';
 import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
 import { OpenFileProvider } from './components/Chat/OpenFileContext';
+import { CommandPalette } from './components/CommandPalette/CommandPalette';
+import { usePaletteOpen } from './components/CommandPalette/usePaletteOpen';
 import {
   OverlayStackProvider,
   useModalOpen,
@@ -105,6 +107,9 @@ function AppInner(): JSX.Element {
     stack.getTopOnEsc()?.();
   });
 
+  const palette = usePaletteOpen();
+  useShortcutAction('palette.open', () => palette.setOpen(true));
+
   return (
     <div
       style={{
@@ -194,6 +199,14 @@ function AppInner(): JSX.Element {
           onCreated={() => setDialogOpenFor(null)}
         />
       )}
+
+      <CommandPalette
+        open={palette.open}
+        onClose={() => palette.setOpen(false)}
+        projects={projects}
+        worktreesById={worktreesById}
+        onOpenWorktree={(wid, pid) => open(wid, pid)}
+      />
     </div>
   );
 }
