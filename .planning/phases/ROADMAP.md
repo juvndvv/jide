@@ -12,7 +12,7 @@
 | 4 — Multi-sesión por worktree | ✅ Mergeable (PR #4) | `.planning/plans/2026-05-14-fase-4-multi-sesion.md` |
 | 5 — Tabs + UI shell | ✅ Mergeable (PR #5) | `.planning/plans/2026-05-14-fase-5-tabs-ui-shell.md` |
 | 6 — Splits (terminal + chat) | ✅ Mergeable (PR #6) | `.planning/plans/2026-05-14-fase-6-splits.md` |
-| 7 — File viewer + watcher | 📝 Plan listo | `.planning/plans/2026-05-15-fase-7-file-viewer.md` |
+| 7 — File viewer + watcher | ✅ Mergeable (PR #7) | `.planning/plans/2026-05-15-fase-7-file-viewer.md` |
 | 8 — Command palette + atajos | 🗒 Outline | — |
 | 9 — Polish & packaging | 🗒 Outline | — |
 
