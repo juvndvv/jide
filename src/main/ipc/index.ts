@@ -20,12 +20,16 @@ export interface IpcDeps {
 }
 
 export function registerAllHandlers(deps: IpcDeps): { filesManager: FileWatcherManager } {
+  const filesManager = registerFilesHandlers(deps.getWorktreeRoot);
+
   registerPing();
   registerSettings(deps.store);
   registerProjects(deps.registry, deps.afterProjectsMutation);
-  registerWorktrees(deps.registry);
+  registerWorktrees(deps.registry, {
+    onWorktreeRemoved: (worktreeId) => filesManager.release(worktreeId),
+  });
   registerSessions(deps.registry, deps.manager, deps.store);
   registerTerminalHandlers(deps.pty ?? null);
-  const filesManager = registerFilesHandlers(deps.getWorktreeRoot);
+
   return { filesManager };
 }

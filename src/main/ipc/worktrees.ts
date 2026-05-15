@@ -3,7 +3,11 @@ import { sendEvent } from './events.js';
 import { createGitClient } from '../git/index.js';
 import type { ProjectRegistry } from '../projects/index.js';
 
-export function registerWorktrees(registry: ProjectRegistry): void {
+export interface WorktreesDeps {
+  onWorktreeRemoved?: (worktreeId: string) => void;
+}
+
+export function registerWorktrees(registry: ProjectRegistry, deps: WorktreesDeps = {}): void {
   function projectPath(projectId: string): string {
     const p = registry.list().find((x) => x.id === projectId);
     if (!p) throw new Error(`Project not found: ${projectId}`);
@@ -31,5 +35,6 @@ export function registerWorktrees(registry: ProjectRegistry): void {
     const client = createGitClient(projectPath(projectId));
     await client.removeWorktree(worktreePath);
     sendEvent('worktrees:changed', { projectId, worktrees: await client.worktrees() });
+    deps.onWorktreeRemoved?.(`${projectPath(projectId)}:${worktreePath}`);
   });
 }
