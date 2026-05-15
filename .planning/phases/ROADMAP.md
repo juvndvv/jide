@@ -13,7 +13,7 @@
 | 5 — Tabs + UI shell | ✅ Mergeable (PR #5) | `.planning/plans/2026-05-14-fase-5-tabs-ui-shell.md` |
 | 6 — Splits (terminal + chat) | ✅ Mergeable (PR #6) | `.planning/plans/2026-05-14-fase-6-splits.md` |
 | 7 — File viewer + watcher | ✅ Mergeable (PR #7) | `.planning/plans/2026-05-15-fase-7-file-viewer.md` |
-| 8 — Command palette + atajos | 🗒 Outline | — |
+| 8 — Command palette + atajos | ✅ Mergeable (PR #9) | `.planning/plans/2026-05-15-fase-8-command-palette.md` |
 | 9 — Polish & packaging | 🗒 Outline | — |
 
 ---
