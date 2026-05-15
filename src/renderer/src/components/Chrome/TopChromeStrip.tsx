@@ -21,7 +21,7 @@ export function TopChromeStrip({ project, worktree }: TopChromeStripProps): JSX.
         display: 'flex',
         alignItems: 'center',
         gap: 14,
-        height: 30,
+        height: 38,
         padding: `0 ${padRight}px 0 ${padLeft}px`,
         background: theme.appBg,
         flexShrink: 0,
