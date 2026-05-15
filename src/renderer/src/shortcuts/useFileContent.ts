@@ -13,6 +13,7 @@ export function useFileContent(worktreeId: string | null, relPath: string | null
   useEffect(() => {
     if (!worktreeId || !relPath) {
       setResult(null);
+      setLoading(false);
       return;
     }
     let alive = true;
@@ -25,15 +26,21 @@ export function useFileContent(worktreeId: string | null, relPath: string | null
 
   useEffect(() => {
     if (!worktreeId || !relPath) return;
+    let alive = true;
     const off = window.jide.on('files:change', (event: FileChangeEvent) => {
       if (event.worktreeId !== worktreeId || event.relPath !== relPath) return;
       if (event.kind === 'unlink') {
-        setResult({ kind: 'missing' });
+        if (alive) setResult({ kind: 'missing' });
         return;
       }
-      void window.jide.files.read(worktreeId, relPath).then(setResult);
+      void window.jide.files.read(worktreeId, relPath).then((res) => {
+        if (alive) setResult(res);
+      });
     });
-    return off;
+    return () => {
+      alive = false;
+      off();
+    };
   }, [worktreeId, relPath]);
 
   return { result, loading };

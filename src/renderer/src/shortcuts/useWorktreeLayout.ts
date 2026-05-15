@@ -7,10 +7,10 @@ import {
   makeEmptyLayout,
   MAX_CHAT_PANES,
   mergeLeaf,
-  openViewer,
+  openViewer as openViewerLayout,
   pruneOrphans,
   setRatio,
-  setViewerPath,
+  setViewerPath as setViewerPathLayout,
   setViewerRatio,
   splitLeaf,
   toggleAxis,
@@ -263,7 +263,8 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
   const openViewerOp = useCallback(
     (path: string | null) => {
       setLayout((prev) => {
-        const next = openViewer(prev, path);
+        if (prev.viewer.open && prev.viewer.path === path) return prev;
+        const next = openViewerLayout(prev, path);
         schedulePersist(worktreeId, next);
         return next;
       });
@@ -283,7 +284,8 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
   const setViewerPathOp = useCallback(
     (path: string | null) => {
       setLayout((prev) => {
-        const next = setViewerPath(prev, path);
+        if (prev.viewer.path === path) return prev;
+        const next = setViewerPathLayout(prev, path);
         schedulePersist(worktreeId, next);
         return next;
       });

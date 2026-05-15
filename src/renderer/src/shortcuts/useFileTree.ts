@@ -104,10 +104,12 @@ export function useFileTree(worktreeId: string | null): UseFileTree {
     return out;
   }, [children, expanded, status]);
 
+  const refresh = useCallback(() => { void fetchChildren(null); }, [fetchChildren]);
+
   return {
     rows,
     loadingRoot,
     toggleExpand,
-    refresh: () => { void fetchChildren(null); },
+    refresh,
   };
 }
