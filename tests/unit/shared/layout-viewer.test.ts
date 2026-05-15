@@ -47,6 +47,14 @@ describe('viewer state ops', () => {
     expect(setViewerRatio(l, 0.35).viewer.ratio).toBe(0.35);
   });
 
+  it('setViewerRatio returns same reference when clamped value is unchanged', () => {
+    const l = makeEmptyLayout();
+    expect(setViewerRatio(l, 0.28)).toBe(l);
+    const opened = openViewer(l, null);
+    const withCustomRatio = setViewerRatio(opened, 0.35);
+    expect(setViewerRatio(withCustomRatio, 0.35)).toBe(withCustomRatio);
+  });
+
   it('setViewerPath updates only path', () => {
     const l = openViewer(makeEmptyLayout(), 'a.ts');
     const next = setViewerPath(l, 'b.ts');
