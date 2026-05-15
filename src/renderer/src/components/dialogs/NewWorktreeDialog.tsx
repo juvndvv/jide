@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Project } from '@shared/project';
 import { useTheme } from '../../theme/useTheme';
+import { Overlay } from '../../overlay/Overlay';
 
 export function NewWorktreeDialog({
   project,
@@ -57,22 +58,14 @@ export function NewWorktreeDialog({
   };
 
   return (
-    <div
-      data-testid="new-worktree-dialog"
-      role="dialog"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: theme.scrim,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 100,
-      }}
-      onClick={onCancel}
+    <Overlay
+      id="new-worktree"
+      z={100}
+      onClose={busy ? () => {} : onCancel}
+      ariaLabel="Nuevo worktree"
+      dataTestId="new-worktree-dialog"
     >
       <div
-        onClick={(e) => e.stopPropagation()}
         style={{
           width: 480,
           background: theme.panelBg,
@@ -189,6 +182,6 @@ export function NewWorktreeDialog({
           </button>
         </div>
       </div>
-    </div>
+    </Overlay>
   );
 }
