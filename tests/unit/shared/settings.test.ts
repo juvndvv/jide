@@ -29,4 +29,13 @@ describe('shared/settings — schema contract', () => {
     expect(DEFAULT_SETTINGS.activeSessionByWt).toEqual({});
     expect(DEFAULT_SETTINGS.sessions).toEqual({});
   });
+
+  it('default settings include layoutByWt', () => {
+    expect(DEFAULT_SETTINGS.layoutByWt).toEqual({});
+  });
+
+  it('SettingsKey covers layoutByWt', () => {
+    const layoutByWt: SettingsKey = 'layoutByWt';
+    void layoutByWt;
+  });
 });

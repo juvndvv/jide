@@ -22,6 +22,10 @@ export const CHANNELS = [
   'sessions:rename',
   'sessions:set-active',
   'sessions:get-active',
+  'terminal:create',
+  'terminal:write',
+  'terminal:resize',
+  'terminal:kill',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
@@ -63,6 +67,10 @@ export type ChannelMap = {
   'sessions:rename': { req: { worktreeId: string; sessionId: string; title: string }; res: void };
   'sessions:set-active': { req: { worktreeId: string; sessionId: string }; res: void };
   'sessions:get-active': { req: { worktreeId: string }; res: string | null };
+  'terminal:create': { req: { worktreeId: string; cwd: string; cols: number; rows: number }; res: { pid: number } };
+  'terminal:write': { req: { worktreeId: string; data: string }; res: void };
+  'terminal:resize': { req: { worktreeId: string; cols: number; rows: number }; res: void };
+  'terminal:kill': { req: { worktreeId: string }; res: void };
 };
 
 export type Req<C extends Channel> = ChannelMap[C]['req'];
@@ -74,6 +82,8 @@ export const EVENTS = [
   'worktrees:changed',
   'sessions:event',
   'sessions:list-changed',
+  'terminal:data',
+  'terminal:exit',
 ] as const;
 export type Event = (typeof EVENTS)[number];
 
@@ -83,6 +93,9 @@ export type EventMap = {
   'worktrees:changed': { projectId: string; worktrees: Worktree[] };
   'sessions:event': { worktreeId: string; snapshot: SessionSnapshot };
   'sessions:list-changed': { worktreeId: string; sessions: SessionSnapshot[] };
+  'terminal:data': { worktreeId: string; data: string };
+  /** signal uses string | null for renderer-bundle compatibility (no node types in web tsconfig). */
+  'terminal:exit': { worktreeId: string; code: number | null; signal: string | null };
 };
 
 export type EventPayload<E extends Event> = EventMap[E];
@@ -123,6 +136,12 @@ export interface JideApi {
     rename: (worktreeId: string, sessionId: string, title: string) => Promise<void>;
     setActive: (worktreeId: string, sessionId: string) => Promise<void>;
     getActive: (worktreeId: string) => Promise<string | null>;
+  };
+  terminal: {
+    create: (worktreeId: string, cwd: string, cols?: number, rows?: number) => Promise<{ pid: number }>;
+    write: (worktreeId: string, data: string) => Promise<void>;
+    resize: (worktreeId: string, cols: number, rows: number) => Promise<void>;
+    kill: (worktreeId: string) => Promise<void>;
   };
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void;
 }

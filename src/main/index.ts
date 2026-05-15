@@ -9,6 +9,9 @@ import { SessionManager } from './claude/manager.js';
 import { loadAllSessions, saveSessionsForWorktree } from './claude/persistence.js';
 import { claudeStateForWorktree } from './claude/rollup.js';
 import { createGitClient } from './git/index.js';
+import { PtyManager } from './pty/manager.js';
+import { detectShell } from './pty/shell-detect.js';
+import { probeNativeBindings } from './pty/health.js';
 import type { SessionSnapshot } from '@shared/session';
 import type { ProjectRegistry } from './projects/index.js';
 
@@ -22,10 +25,11 @@ process.on('unhandledRejection', (reason, promise) => {
 
 let store: JideStore | null = null;
 let manager: SessionManager | null = null;
+let pty: PtyManager | null = null;
 
 app
   .whenReady()
-  .then(() => {
+  .then(async () => {
     store = createStore({ cwd: process.env.JIDE_TEST_STORE_CWD });
     const registry = createProjectRegistry(store);
     manager = new SessionManager({
@@ -37,6 +41,14 @@ app
       for (const seed of sessions) {
         manager.rehydrate({ worktreeId, cwd: seed.cwd, seed });
       }
+    }
+
+    const probe = await probeNativeBindings();
+    if (!probe.ok) {
+      console.error('[jide] node-pty native bindings failed to load:', probe.reason);
+    } else {
+      pty = new PtyManager(() => detectShell(process.env, process.platform));
+      await pty.init();
     }
 
     const watcherMgr = createWatcherManager(({ projectId, worktree }) => {
@@ -52,6 +64,7 @@ app
       registry,
       manager,
       afterProjectsMutation: reconcile,
+      pty,
     });
 
     manager.on('list-changed', (payload: { worktreeId: string; sessions: SessionSnapshot[] }) => {
@@ -80,6 +93,7 @@ app.on('before-quit', () => {
     }
     manager.killAll();
   }
+  if (pty) pty.killAll();
 });
 
 app.on('window-all-closed', () => {

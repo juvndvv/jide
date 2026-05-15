@@ -44,3 +44,8 @@ body {
     opacity: 1;
   }
 }
+
+.xterm {
+  padding: 6px 8px;
+  height: 100%;
+}

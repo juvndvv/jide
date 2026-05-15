@@ -17,6 +17,11 @@ export interface LaunchOptions {
    * `node fake-claude.mjs --script <path>` instead of the real CLI.
    */
   fakeClaudeScript?: string;
+  /**
+   * Path to a Node script to use as the PTY shell in tests.
+   * When set, PtyManager spawns `node <testPtyBin>` instead of the detected shell.
+   */
+  testPtyBin?: string;
 }
 
 export async function launchJide(opts: LaunchOptions = {}): Promise<ElectronApplication> {
@@ -37,6 +42,7 @@ export async function launchJide(opts: LaunchOptions = {}): Promise<ElectronAppl
             JIDE_CLAUDE_FAKE_SCRIPT: opts.fakeClaudeScript,
           }
         : {}),
+      ...(opts.testPtyBin ? { JIDE_TEST_PTY_BIN: opts.testPtyBin } : {}),
     },
   });
 }

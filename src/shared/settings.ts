@@ -1,6 +1,7 @@
 import type { Project } from './project.js';
 import type { PersistedSession } from './session.js';
 import type { AccentId, DensityId, SidebarSide, ThemeMode } from './theme.js';
+import type { WorktreeLayout } from './layout.js';
 
 export type { ThemeMode };
 
@@ -24,6 +25,8 @@ export interface SettingsSchema {
   activeSessionByWt: Record<string, string>;
   /** worktreeId → list of persisted session snapshots. */
   sessions: Record<string, PersistedSession[]>;
+  /** worktreeId → pane layout for that worktree. */
+  layoutByWt: Record<string, WorktreeLayout>;
 }
 
 export const DEFAULT_SETTINGS: SettingsSchema = {
@@ -37,6 +40,7 @@ export const DEFAULT_SETTINGS: SettingsSchema = {
   maxSessionsPerWorktree: 4,
   activeSessionByWt: {},
   sessions: {},
+  layoutByWt: {},
 };
 
 export type SettingsKey = keyof SettingsSchema;
