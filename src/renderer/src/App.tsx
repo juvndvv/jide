@@ -206,6 +206,8 @@ function AppInner(): JSX.Element {
         projects={projects}
         worktreesById={worktreesById}
         onOpenWorktree={(wid, pid) => open(wid, pid)}
+        activeWorktreeId={activeWorktreeId}
+        onOpenFile={onOpenFile}
       />
     </div>
   );
