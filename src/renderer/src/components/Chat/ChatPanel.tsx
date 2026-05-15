@@ -4,7 +4,12 @@ import { countLeaves, findLeaf, flattenLeafIds } from '@shared/layout';
 import type { WorktreeLayoutOps } from '../../shortcuts/useWorktreeLayout';
 import { useTheme } from '../../theme/useTheme';
 import { useSessionsList } from '../../shortcuts/useSessionsList';
-import { useSessionHotkey } from './useSessionHotkey';
+import { useShortcutAction } from '../../shortcuts/useShortcutAction';
+import {
+  useSetChatFocused,
+  useSetSessionActive,
+  useSetSessionCapReached,
+} from '../../shortcuts/ShortcutContext';
 import { SessionStrip } from './SessionStrip';
 import { ChatGrid } from './ChatGrid';
 import { EmptySessions } from './EmptySessions';
@@ -27,9 +32,33 @@ export function ChatPanel({
   const { theme } = useTheme();
   const { sessions, activeId, setActive, create, rename, kill, capReached } =
     useSessionsList(worktreeId, maxSessionsPerWorktree);
-  useSessionHotkey(worktreeId !== null && !capReached, () => {
-    void create();
-  });
+
+  const setChatFocused = useSetChatFocused();
+  const setSessionActive = useSetSessionActive();
+  const setSessionCapReached = useSetSessionCapReached();
+
+  useEffect(() => {
+    setChatFocused(true);
+    return () => setChatFocused(false);
+  }, [setChatFocused]);
+
+  useEffect(() => {
+    setSessionActive(activeId !== null);
+    return () => setSessionActive(false);
+  }, [activeId, setSessionActive]);
+
+  useEffect(() => {
+    setSessionCapReached(capReached);
+    return () => setSessionCapReached(false);
+  }, [capReached, setSessionCapReached]);
+
+  useShortcutAction(
+    'session.new',
+    () => {
+      void create();
+    },
+    worktreeId !== null && !capReached,
+  );
 
   // When a single session is loaded and NO pane has a session assigned yet,
   // auto-assign to the active pane so restored sessions appear without drag-and-drop.
