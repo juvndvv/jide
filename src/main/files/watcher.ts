@@ -1,5 +1,6 @@
-import chokidar, { type FSWatcher } from 'chokidar';
+import { subscribe, type AsyncSubscription } from '@parcel/watcher';
 import { relative, sep } from 'node:path';
+import { realpath } from 'node:fs/promises';
 import type { FileChangeEvent, FileChangeKind } from '@shared/files';
 import { isIgnoredPath } from './ignore.js';
 
@@ -12,8 +13,6 @@ export interface FileWatcherOptions {
   repoRoot: string;
   onEvent: (event: FileChangeEvent) => void;
   debounceMs?: number;
-  /** Use polling instead of native FSEvents — more reliable in test environments. */
-  usePolling?: boolean;
 }
 
 export interface FileWatcherHandle {
@@ -21,19 +20,37 @@ export interface FileWatcherHandle {
   ready: Promise<void>;
 }
 
-const EVENT_MAP: Record<string, FileChangeKind> = {
-  add: 'add',
-  change: 'change',
-  unlink: 'unlink',
-  addDir: 'add-dir',
-  unlinkDir: 'unlink-dir',
-};
+// @parcel/watcher's ignore globs prune events at the native layer, avoiding the
+// fsevents enumeration that chokidar performed on subscribe. Patterns match the
+// segments listed in isIgnoredPath; the JS-level predicate stays as a backstop
+// for anything the native matcher misses.
+const IGNORE_GLOBS = [
+  '**/.git/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/out/**',
+  '**/.vite/**',
+  '**/.next/**',
+  '**/coverage/**',
+  '**/.turbo/**',
+  '**/target/**',
+  '**/build/**',
+  '**/.DS_Store',
+  '**/Thumbs.db',
+];
+
+function mapType(t: 'create' | 'update' | 'delete'): FileChangeKind {
+  if (t === 'create') return 'add';
+  if (t === 'update') return 'change';
+  return 'unlink';
+}
 
 export function createFileWatcher(opts: FileWatcherOptions): FileWatcherHandle {
   const debounceMs = opts.debounceMs ?? 200;
   const pending = new Map<string, FileChangeKind>();
   let timer: NodeJS.Timeout | null = null;
   let disposed = false;
+  let subscription: AsyncSubscription | null = null;
 
   const flush = (): void => {
     timer = null;
@@ -44,47 +61,56 @@ export function createFileWatcher(opts: FileWatcherOptions): FileWatcherHandle {
     pending.clear();
   };
 
-  const handle = (raw: string) => (abs: string) => {
-    const kind = EVENT_MAP[raw];
-    if (!kind) return;
-    const rel = toPosix(relative(opts.repoRoot, abs));
-    if (rel === '' || rel.startsWith('..')) return;
-    if (isIgnoredPath(rel)) return;
-    pending.set(rel, kind);
-    if (timer) clearTimeout(timer);
-    timer = setTimeout(flush, debounceMs);
-  };
-
-  const watcher: FSWatcher = chokidar.watch(opts.repoRoot, {
-    ignored: (absPath) => {
-      const rel = toPosix(relative(opts.repoRoot, absPath));
-      return isIgnoredPath(rel);
-    },
-    ignoreInitial: true,
-    persistent: true,
-    depth: 10,
-    usePolling: opts.usePolling ?? false,
-  });
-
-  watcher.on('add', handle('add'));
-  watcher.on('change', handle('change'));
-  watcher.on('unlink', handle('unlink'));
-  watcher.on('addDir', handle('addDir'));
-  watcher.on('unlinkDir', handle('unlinkDir'));
-  watcher.on('error', (err) => {
-    console.error('[files/watcher] error', err);
-  });
-
-  const ready = new Promise<void>((resolve) => {
-    watcher.once('ready', () => resolve());
-  });
+  const ready = (async () => {
+    // On macOS, tmpdir() and several user paths traverse /var → /private/var
+    // and /tmp → /private/tmp symlinks. @parcel/watcher emits events with the
+    // canonical (post-symlink) path, so we resolve the root first and use it
+    // both for subscribe and for the relative() comparison.
+    let resolvedRoot: string;
+    try {
+      resolvedRoot = await realpath(opts.repoRoot);
+    } catch {
+      resolvedRoot = opts.repoRoot;
+    }
+    try {
+      subscription = await subscribe(
+        resolvedRoot,
+        (err, events) => {
+          if (err) {
+            console.error('[files/watcher] subscription error', err);
+            return;
+          }
+          if (disposed) return;
+          let dirty = false;
+          for (const e of events) {
+            const rel = toPosix(relative(resolvedRoot, e.path));
+            if (rel === '' || rel.startsWith('..')) continue;
+            if (isIgnoredPath(rel)) continue;
+            pending.set(rel, mapType(e.type));
+            dirty = true;
+          }
+          if (!dirty) return;
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(flush, debounceMs);
+        },
+        { ignore: IGNORE_GLOBS },
+      );
+    } catch (err) {
+      console.error('[files/watcher] subscribe failed for', resolvedRoot, err);
+    }
+  })();
 
   return {
     ready,
     async dispose() {
       disposed = true;
       if (timer) clearTimeout(timer);
-      await watcher.close();
+      if (subscription) {
+        await subscription.unsubscribe().catch((err) => {
+          console.error('[files/watcher] unsubscribe failed', err);
+        });
+        subscription = null;
+      }
     },
   };
 }

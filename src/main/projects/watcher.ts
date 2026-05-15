@@ -1,6 +1,13 @@
-import chokidar, { type FSWatcher } from 'chokidar';
+import { subscribe, type AsyncSubscription } from '@parcel/watcher';
+import { realpath } from 'node:fs/promises';
+import { relative, sep } from 'node:path';
 import { createGitClient } from '../git/index.js';
+import { isIgnoredPath } from '../files/ignore.js';
 import type { Worktree } from '@shared/project';
+
+function toPosix(p: string): string {
+  return sep === '/' ? p : p.split(sep).join('/');
+}
 
 export interface WatcherOptions {
   projectId: string;
@@ -13,26 +20,25 @@ export interface WatcherHandle {
   dispose: () => Promise<void>;
 }
 
-// chokidar opens one fd per watched directory (fs.watch). A project with a
-// populated node_modules tree easily exceeds macOS' default ulimit of 256
-// and surfaces as EMFILE. The function predicate prevents descent into
-// heavy / irrelevant subtrees BEFORE the fd is opened; depth caps recursion
-// to a sane limit so a freak deep tree can't blow past it anyway.
-const isIgnored = (p: string): boolean =>
-  /(^|\/)\.git(\/|$)/.test(p) ||
-  /(^|\/)node_modules(\/|$)/.test(p) ||
-  /(^|\/)dist(\/|$)/.test(p) ||
-  /(^|\/)out(\/|$)/.test(p) ||
-  /(^|\/)\.next(\/|$)/.test(p) ||
-  /(^|\/)\.vite(\/|$)/.test(p) ||
-  /(^|\/)coverage(\/|$)/.test(p) ||
-  /(^|\/)\.turbo(\/|$)/.test(p);
+// @parcel/watcher prunes these subtrees at the native layer — events for files
+// inside them never reach the JS callback, so a populated node_modules costs
+// nothing instead of the 10k-dir enumeration that chokidar performed.
+const IGNORE_GLOBS = [
+  '**/.git/**',
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/out/**',
+  '**/.next/**',
+  '**/.vite/**',
+  '**/coverage/**',
+  '**/.turbo/**',
+];
 
 export function createWatcher(opts: WatcherOptions): WatcherHandle {
   const debounceMs = opts.debounceMs ?? 500;
   const client = createGitClient(opts.repoRoot);
   let timer: NodeJS.Timeout | null = null;
-  let active: FSWatcher | null = null;
+  let subscription: AsyncSubscription | null = null;
   let disposed = false;
 
   const fire = (): void => {
@@ -50,47 +56,51 @@ export function createWatcher(opts: WatcherOptions): WatcherHandle {
     })();
   };
 
-  const startWatcher = (usePolling: boolean): FSWatcher => {
-    const w = chokidar.watch(opts.repoRoot, {
-      ignored: isIgnored,
-      ignoreInitial: true,
-      persistent: true,
-      depth: 10,
-      usePolling,
-      // Polling at 1s is a reasonable trade-off when EMFILE forces this path:
-      // a developer waits ~1s for the status badge, no fd cost.
-      interval: usePolling ? 1000 : undefined,
-    });
-    w.on('all', () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(fire, debounceMs);
-    });
-    w.on('error', (err) => {
-      const code = (err as NodeJS.ErrnoException).code;
-      if ((code === 'EMFILE' || code === 'ENOSPC') && !usePolling) {
-        // Fall back to polling — no fd cost, mild CPU cost.
-        console.warn(
-          `[watcher] ${opts.repoRoot}: ${code} from fs.watch. Falling back to polling watcher.`,
-        );
-        void w.close().finally(() => {
+  void (async () => {
+    let resolvedRoot: string;
+    try {
+      resolvedRoot = await realpath(opts.repoRoot);
+    } catch {
+      resolvedRoot = opts.repoRoot;
+    }
+    try {
+      subscription = await subscribe(
+        resolvedRoot,
+        (err, events) => {
+          if (err) {
+            console.error('[watcher] subscription error', err);
+            return;
+          }
           if (disposed) return;
-          active = startWatcher(true);
-        });
-        return;
-      }
-      console.error('[watcher] error', err);
-    });
-    return w;
-  };
-
-  active = startWatcher(false);
+          // Filter at the JS level as a backstop in case @parcel/watcher's
+          // ignore globs miss something (different platforms have different
+          // glob engines).
+          const meaningful = events.some((e) => {
+            const rel = toPosix(relative(resolvedRoot, e.path));
+            if (rel === '' || rel.startsWith('..')) return false;
+            return !isIgnoredPath(rel);
+          });
+          if (!meaningful) return;
+          if (timer) clearTimeout(timer);
+          timer = setTimeout(fire, debounceMs);
+        },
+        { ignore: IGNORE_GLOBS },
+      );
+    } catch (err) {
+      console.error('[watcher] subscribe failed for', resolvedRoot, err);
+    }
+  })();
 
   return {
     async dispose() {
       disposed = true;
       if (timer) clearTimeout(timer);
-      if (active) await active.close();
-      active = null;
+      if (subscription) {
+        await subscription.unsubscribe().catch((err) => {
+          console.error('[watcher] unsubscribe failed', err);
+        });
+        subscription = null;
+      }
     },
   };
 }
