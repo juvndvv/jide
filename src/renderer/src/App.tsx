@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import { Sidebar } from './components/Sidebar';
+import { HelpDialog } from './components/dialogs/HelpDialog';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { TopChromeStrip } from './components/Chrome/TopChromeStrip';
 import { StatusBar } from './components/StatusBar/StatusBar';
@@ -40,6 +41,7 @@ function AppInner(): JSX.Element {
   const [dialogOpenFor, setDialogOpenFor] = useState<string | null>(null);
   const [maxSessions, setMaxSessions] = useState<number>(4);
   const [tweaksOpen, setTweaksOpen] = useState<boolean>(false);
+  const [helpOpen, setHelpOpen] = useState<boolean>(false);
 
   useEffect(() => {
     window.jide.settings
@@ -109,6 +111,7 @@ function AppInner(): JSX.Element {
 
   const palette = usePaletteOpen();
   useShortcutAction('palette.open', () => palette.setOpen(true));
+  useShortcutAction('help.open', () => setHelpOpen(true));
 
   return (
     <div
@@ -209,6 +212,8 @@ function AppInner(): JSX.Element {
         activeWorktreeId={activeWorktreeId}
         onOpenFile={onOpenFile}
       />
+
+      {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
     </div>
   );
 }
