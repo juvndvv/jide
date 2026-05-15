@@ -1,10 +1,16 @@
 import { useEffect, type JSX } from 'react';
 import type { WorktreeLayout } from '@shared/layout';
 import { countLeaves, findLeaf, flattenLeafIds } from '@shared/layout';
+import type { SessionSnapshot } from '@shared/session';
 import type { WorktreeLayoutOps } from '../../shortcuts/useWorktreeLayout';
 import { useTheme } from '../../theme/useTheme';
 import { useSessionsList } from '../../shortcuts/useSessionsList';
-import { useSessionHotkey } from './useSessionHotkey';
+import { useShortcutAction } from '../../shortcuts/useShortcutAction';
+import {
+  useSetChatFocused,
+  useSetSessionActive,
+  useSetSessionCapReached,
+} from '../../shortcuts/ShortcutContext';
 import { SessionStrip } from './SessionStrip';
 import { ChatGrid } from './ChatGrid';
 import { EmptySessions } from './EmptySessions';
@@ -16,6 +22,7 @@ export interface ChatPanelProps {
   maxSessionsPerWorktree?: number;
   layout: WorktreeLayout | null;
   ops: WorktreeLayoutOps | null;
+  onRequestKill?: (worktreeId: string, session: SessionSnapshot) => void;
 }
 
 export function ChatPanel({
@@ -23,13 +30,50 @@ export function ChatPanel({
   maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
   layout,
   ops,
+  onRequestKill,
 }: ChatPanelProps): JSX.Element {
   const { theme } = useTheme();
   const { sessions, activeId, setActive, create, rename, kill, capReached } =
     useSessionsList(worktreeId, maxSessionsPerWorktree);
-  useSessionHotkey(worktreeId !== null && !capReached, () => {
-    void create();
-  });
+
+  const setChatFocused = useSetChatFocused();
+  const setSessionActive = useSetSessionActive();
+  const setSessionCapReached = useSetSessionCapReached();
+
+  useEffect(() => {
+    setChatFocused(true);
+    return () => setChatFocused(false);
+  }, [setChatFocused]);
+
+  useEffect(() => {
+    setSessionActive(activeId !== null);
+    return () => setSessionActive(false);
+  }, [activeId, setSessionActive]);
+
+  useEffect(() => {
+    setSessionCapReached(capReached);
+    return () => setSessionCapReached(false);
+  }, [capReached, setSessionCapReached]);
+
+  useShortcutAction(
+    'session.new',
+    () => {
+      void create();
+    },
+    worktreeId !== null && !capReached,
+  );
+
+  const activeSession =
+    activeId !== null ? (sessions.find((s) => s.id.uuid === activeId) ?? null) : null;
+
+  useShortcutAction(
+    'session.kill',
+    () => {
+      if (!worktreeId || !activeSession || !onRequestKill) return;
+      onRequestKill(worktreeId, activeSession);
+    },
+    worktreeId !== null && activeSession !== null && onRequestKill !== undefined,
+  );
 
   // When a single session is loaded and NO pane has a session assigned yet,
   // auto-assign to the active pane so restored sessions appear without drag-and-drop.

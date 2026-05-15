@@ -1,42 +1,29 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { keymap, type KeyBinding } from './keymap';
+import { parseKeys, matchKey, type ParsedKey } from './matchKeys';
+import { useShortcutContext, useShortcutDispatcher } from './ShortcutContext';
 
-export interface GlobalShortcutHandlers {
-  onToggleTweaks?: () => void;
-  onNewWorktree?: () => void;
-  onEscape?: () => void;
-  onToggleTerminal?: () => void;
-  onToggleViewer?: () => void;
-}
+const parsed: Array<[ParsedKey, KeyBinding]> = keymap.map((b) => [parseKeys(b.keys), b]);
 
-export function useGlobalShortcuts(handlers: GlobalShortcutHandlers): void {
+export function useGlobalShortcuts(): void {
+  const ctx = useShortcutContext();
+  const dispatcher = useShortcutDispatcher();
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
+  const dispatcherRef = useRef(dispatcher);
+  dispatcherRef.current = dispatcher;
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === ',') {
+      for (const [p, binding] of parsed) {
+        if (!binding.when(ctxRef.current)) continue;
+        if (!matchKey(p, e)) continue;
         e.preventDefault();
-        handlers.onToggleTweaks?.();
+        dispatcherRef.current.dispatch(binding.id);
         return;
-      }
-      if (mod && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        handlers.onNewWorktree?.();
-        return;
-      }
-      if (mod && e.key === '\\') {
-        e.preventDefault();
-        handlers.onToggleTerminal?.();
-        return;
-      }
-      if (mod && (e.key === 'o' || e.key === 'O')) {
-        e.preventDefault();
-        handlers.onToggleViewer?.();
-        return;
-      }
-      if (e.key === 'Escape') {
-        handlers.onEscape?.();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [handlers]);
+  }, []);
 }

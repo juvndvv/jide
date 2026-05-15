@@ -1,6 +1,7 @@
 import type { JSX } from 'react';
 import type { Worktree } from '@shared/project';
 import type { WorktreeLayout } from '@shared/layout';
+import type { SessionSnapshot } from '@shared/session';
 import type { WorktreeLayoutOps } from '../../shortcuts/useWorktreeLayout';
 import { ChatPanel } from '../Chat/ChatPanel';
 import { TerminalPanel } from '../Terminal/TerminalPanel';
@@ -14,10 +15,11 @@ export interface WorktreeViewProps {
   maxSessionsPerWorktree: number;
   layout: WorktreeLayout;
   ops: WorktreeLayoutOps;
+  onRequestKill?: (worktreeId: string, session: SessionSnapshot) => void;
 }
 
 export function WorktreeView({
-  worktreeId, worktree, shellName, maxSessionsPerWorktree, layout, ops,
+  worktreeId, worktree, shellName, maxSessionsPerWorktree, layout, ops, onRequestKill,
 }: WorktreeViewProps): JSX.Element {
   const chat = (
     <ChatPanel
@@ -25,6 +27,7 @@ export function WorktreeView({
       maxSessionsPerWorktree={maxSessionsPerWorktree}
       layout={layout}
       ops={ops}
+      onRequestKill={onRequestKill}
     />
   );
 

@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type JSX, type RefObject } from 'react';
 import { useTheme } from '../../theme/useTheme';
 import type { SidebarSide } from '../../theme/tokens';
+import { useOverlayStack } from '../../overlay/OverlayStackContext';
 import { TweakSection } from './TweakSection';
 import { TweakRadio } from './TweakRadio';
 import { TweakColor } from './TweakColor';
@@ -34,16 +35,17 @@ export function TweaksPanel({ anchorRef, side, onClose }: TweaksPanelProps): JSX
       if (anchorRef.current?.contains(target)) return;
       onClose();
     };
-    const onKey = (e: KeyboardEvent): void => {
-      if (e.key === 'Escape') onClose();
-    };
     window.addEventListener('mousedown', onMouseDown);
-    window.addEventListener('keydown', onKey);
     return () => {
       window.removeEventListener('mousedown', onMouseDown);
-      window.removeEventListener('keydown', onKey);
     };
   }, [anchorRef, onClose]);
+
+  const stack = useOverlayStack();
+  useEffect(() => {
+    stack.push({ id: 'tweaks-panel', z: 50, onEsc: onClose });
+    return () => stack.remove('tweaks-panel');
+  }, [stack, onClose]);
 
   return (
     <>

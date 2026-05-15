@@ -92,8 +92,6 @@ test.describe('multi-session', () => {
       timeout: 5000,
     });
 
-    // The composer is INPUT-focused after pressing Enter; useSessionHotkey
-    // ignores keydown when the target is INPUT, so click outside first.
     await page.getByTestId('session-strip').click();
 
     const hotkey = process.platform === 'darwin' ? 'Meta+t' : 'Control+t';

@@ -6,7 +6,38 @@ import { readFile } from '../files/reader.js';
 import { loadStatus } from '../files/git-status.js';
 import { createFileWatcher, type FileWatcherHandle } from '../files/watcher.js';
 import { sendEvent } from './events.js';
+import { normalize as normalizeText } from '@shared/normalize';
 import type { FileChangeEvent, GitFileStatus } from '@shared/files';
+
+const SEARCH_MAX_LIMIT = 500;
+
+export async function searchFiles(
+  repoRoot: string,
+  query: string,
+  limit: number,
+): Promise<{ relPath: string; name: string }[]> {
+  const needle = normalizeText(query);
+  if (needle === '') return [];
+  const results: { relPath: string; name: string }[] = [];
+  const stack: string[] = [''];
+  while (stack.length > 0 && results.length < limit) {
+    const rel = stack.pop()!;
+    const abs = rel === '' ? repoRoot : join(repoRoot, rel);
+    const children = await readChildren(abs, repoRoot);
+    for (const child of children) {
+      if (results.length >= limit) break;
+      if (child.kind === 'dir') {
+        stack.push(child.relPath);
+      } else if (
+        normalizeText(child.name).includes(needle) ||
+        normalizeText(child.relPath).includes(needle)
+      ) {
+        results.push({ relPath: child.relPath, name: child.name });
+      }
+    }
+  }
+  return results;
+}
 
 function toPosix(p: string): string {
   return sep === '/' ? p : p.split(sep).join('/');
@@ -128,6 +159,17 @@ export function registerFilesHandlers(
       const resolved = await resolveWithinRoot(root, req.pathFromTool);
       if (!resolved) return null;
       return { relPath: resolved.rel };
+    },
+  );
+
+  ipcMain.handle(
+    'files:search',
+    async (_, req: { worktreeId: string; query: string; limit: number }) => {
+      const root = getWorktreeRoot(req.worktreeId);
+      if (!root) return [];
+      const cappedLimit = Math.min(Math.max(req.limit, 0), SEARCH_MAX_LIMIT);
+      if (cappedLimit === 0) return [];
+      return await searchFiles(resolve(root), req.query, cappedLimit);
     },
   );
 
