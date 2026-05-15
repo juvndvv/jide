@@ -79,7 +79,7 @@ export function Sidebar({
           <SidebarRow icon="plus" onClick={onNewWorktree} kbd="⌘N">
             Nuevo worktree
           </SidebarRow>
-          <SidebarRow icon="folder" onClick={onAddProject} kbd="⌘O">
+          <SidebarRow icon="folder" onClick={onAddProject}>
             Añadir proyecto
           </SidebarRow>
           <SidebarRow

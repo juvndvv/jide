@@ -38,14 +38,19 @@ export function App(): JSX.Element {
   const { layout, ops } = useWorktreeLayout(activeWorktreeId);
 
   const onOpenFile = useCallback(
-    async (toolPath: string) => {
+    (toolPath: string) => {
       if (!activeWorktreeId) return;
-      const res = await window.jide.files.openInViewer(activeWorktreeId, toolPath);
-      if (!res) {
-        console.warn('[jide] tool message path outside worktree:', toolPath);
-        return;
-      }
-      ops.openViewer(res.relPath);
+      window.jide.files.openInViewer(activeWorktreeId, toolPath)
+        .then((res) => {
+          if (!res) {
+            console.warn('[jide] tool message path outside worktree:', toolPath);
+            return;
+          }
+          ops.openViewer(res.relPath);
+        })
+        .catch((err: unknown) => {
+          console.error('[jide] files.openInViewer failed', err);
+        });
     },
     [activeWorktreeId, ops],
   );
