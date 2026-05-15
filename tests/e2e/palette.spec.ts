@@ -54,11 +54,13 @@ test.describe('command palette', () => {
     await page.keyboard.press(`${MOD}+k`);
     await expect(page.getByTestId('command-palette')).toBeVisible();
 
-    // Before typing: the palette.open action and the worktree row are both
-    // visible. (Acciones is reduced to the always-on entries while the palette
-    // itself is the top overlay; worktrees are unconditional.)
+    // Before typing: every paletteLabel action evaluated against a
+    // modal-cleared context is visible (worktree.new, tweaks.toggle,
+    // terminal.toggle, viewer.toggle, help.open) plus the worktree row.
+    // session.new/session.kill stay hidden until a chat panel is focused
+    // with an active session; palette.open is suppressed in-palette.
     const items = page.getByTestId('command-palette').locator('[cmdk-item]');
-    await expect(items).toHaveCount(2);
+    await expect(items).toHaveCount(6);
 
     // Typing "main" narrows down to the worktree row only.
     await page.keyboard.type('main');
