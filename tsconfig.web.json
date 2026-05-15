@@ -9,6 +9,11 @@
       "@renderer/*": ["src/renderer/src/*"]
     }
   },
-  "include": ["src/renderer/**/*", "src/shared/**/*", "tests/unit/renderer/**/*"],
+  "include": [
+    "src/renderer/**/*",
+    "src/shared/**/*",
+    "tests/unit/renderer/**/*",
+    "tests/unit/shortcuts/**/*"
+  ],
   "exclude": ["node_modules", "out"]
 }
