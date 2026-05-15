@@ -152,6 +152,8 @@ export function App(): JSX.Element {
         worktree={activeWt}
         terminalSplit={layout.terminal}
         onToggleTerminal={() => ops.cycleTerminal()}
+        viewerOpen={layout.viewer.open}
+        onToggleViewer={() => ops.toggleViewer()}
       />
 
       {dialogOpenFor && (

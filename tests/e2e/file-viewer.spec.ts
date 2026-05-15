@@ -47,6 +47,33 @@ test.describe('file viewer', () => {
     rmSync(storeCwd, { recursive: true, force: true });
   });
 
+  test('StatusBar Visor button toggles the file viewer panel', async () => {
+    const repoDir = initRepo();
+    writeFileSync(join(repoDir, 'README.md'), '# r\n');
+    execaSync('git', ['-C', repoDir, 'add', '-A']);
+    execaSync('git', ['-C', repoDir, 'commit', '-m', 'init']);
+
+    const storeCwd = mkdtempSync(join(tmpdir(), 'jide-e2e-viewer-store-'));
+    const app = await launchJide({ dialogReturnPath: repoDir, storeCwd });
+    const page = await app.firstWindow();
+
+    await page.evaluate(() => window.jide.projects.add());
+    await page.getByTestId('worktree-main').click();
+    await expect(page.getByTestId('chat-panel')).toBeVisible();
+
+    await expect(page.getByTestId('status-viewer-button')).toBeVisible();
+
+    await page.getByTestId('status-viewer-button').click();
+    await expect(page.getByTestId('file-viewer-panel')).toBeVisible({ timeout: 5000 });
+
+    await page.getByTestId('status-viewer-button').click();
+    await expect(page.getByTestId('file-viewer-panel')).toHaveCount(0);
+
+    await app.close();
+    rmSync(repoDir, { recursive: true, force: true });
+    rmSync(storeCwd, { recursive: true, force: true });
+  });
+
   test('tree filters ignored paths', async () => {
     const repoDir = initRepo();
     mkdirSync(join(repoDir, 'src'));

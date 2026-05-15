@@ -9,6 +9,8 @@ export interface StatusBarProps {
   worktree: Worktree | null;
   terminalSplit?: 'off' | 'bottom' | 'side';
   onToggleTerminal?: () => void;
+  viewerOpen?: boolean;
+  onToggleViewer?: () => void;
 }
 
 function describeClaude(state: Worktree['claude']): string {
@@ -25,7 +27,14 @@ function describeClaude(state: Worktree['claude']): string {
   }
 }
 
-export function StatusBar({ project, worktree, terminalSplit = 'off', onToggleTerminal }: StatusBarProps): JSX.Element {
+export function StatusBar({
+  project,
+  worktree,
+  terminalSplit = 'off',
+  onToggleTerminal,
+  viewerOpen = false,
+  onToggleViewer,
+}: StatusBarProps): JSX.Element {
   const { accent } = useTheme();
   if (!worktree || !project) {
     return (
@@ -61,7 +70,32 @@ export function StatusBar({ project, worktree, terminalSplit = 'off', onToggleTe
       <StatusItem icon="arrow-down">{worktree.behind}</StatusItem>
       <StatusItem icon="diff">{worktree.changes} cambios</StatusItem>
       <div style={{ flex: 1 }} />
-      {/* Term button — rgba(255,255,255,0.18) is intentional: white highlight on accent band (same exception as #FFFFFF text on accent, established in Fase 5) */}
+      {/* Viewer + Term buttons — rgba(255,255,255,0.18) is intentional: white highlight on accent band (same exception as #FFFFFF text on accent, established in Fase 5) */}
+      <button
+        type="button"
+        data-testid="status-viewer-button"
+        aria-label="Visor (⌘O)"
+        onClick={onToggleViewer}
+        style={{
+          height: 22,
+          padding: '0 9px',
+          marginRight: 2,
+          borderRadius: 4,
+          border: 0,
+          background: viewerOpen ? 'rgba(255,255,255,0.18)' : 'transparent',
+          color: '#FFFFFF',
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          fontSize: 11.5,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 5,
+        }}
+      >
+        <JIcon name={viewerOpen ? 'folder-open' : 'folder'} size={11} />
+        <span>Visor</span>
+        <span style={{ opacity: 0.7 }}>⌘O</span>
+      </button>
       <button
         type="button"
         data-testid="status-term-button"
