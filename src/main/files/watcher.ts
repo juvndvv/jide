@@ -75,8 +75,23 @@ export function createFileWatcher(opts: FileWatcherOptions): FileWatcherHandle {
     console.error('[files/watcher] error', err);
   });
 
+  const perfLabel = `[perf] files/watcher ${opts.worktreeId} (${opts.repoRoot})`;
+  console.time(perfLabel);
   const ready = new Promise<void>((resolve) => {
-    watcher.once('ready', () => resolve());
+    watcher.once('ready', () => {
+      console.timeEnd(perfLabel);
+      const watched = watcher.getWatched();
+      let dirCount = 0;
+      let fileCount = 0;
+      for (const dir of Object.keys(watched)) {
+        dirCount++;
+        fileCount += watched[dir]?.length ?? 0;
+      }
+      console.log(
+        `[perf] files/watcher ${opts.worktreeId} ready: ${dirCount} dirs, ${fileCount} entries (polling=${opts.usePolling ?? false})`,
+      );
+      resolve();
+    });
   });
 
   return {

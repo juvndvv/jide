@@ -11,11 +11,16 @@ let cached: Promise<Highlighter> | null = null;
 function loadHighlighter(): Promise<Highlighter> {
   if (cached) return cached;
   cached = (async () => {
+    console.time('[perf] shiki dynamic import');
     const { createHighlighter } = await import('shiki');
-    return createHighlighter({
+    console.timeEnd('[perf] shiki dynamic import');
+    console.time('[perf] shiki createHighlighter');
+    const hl = await createHighlighter({
       themes: ['github-light', 'github-dark'],
       langs: LANGS,
     });
+    console.timeEnd('[perf] shiki createHighlighter');
+    return hl;
   })();
   return cached;
 }

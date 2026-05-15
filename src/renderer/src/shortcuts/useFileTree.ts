@@ -31,8 +31,12 @@ export function useFileTree(worktreeId: string | null): UseFileTree {
     if (!worktreeId) return;
     const key = relPath ?? '';
     if (key === '') setLoadingRoot(true);
+    const perfLabel = `[perf] useFileTree fetchChildren (${worktreeId} :: ${key === '' ? '<root>' : key})`;
+    console.time(perfLabel);
     try {
       const nodes = await window.jide.files.tree(worktreeId, relPath);
+      console.timeEnd(perfLabel);
+      console.log(`[perf] useFileTree fetchChildren returned ${nodes.length} nodes for ${key === '' ? '<root>' : key}`);
       setChildren((prev) => {
         const next = new Map(prev);
         next.set(key, nodes);

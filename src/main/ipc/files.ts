@@ -93,6 +93,7 @@ export function registerFilesHandlers(
 
   const ensureWatcher = (worktreeId: string, worktreePath: string): void => {
     if (handles.has(worktreeId)) return;
+    console.log(`[perf] ipc/files ensureWatcher first-call for ${worktreeId}`);
     const handle = createFileWatcher({ worktreeId, repoRoot: worktreePath, onEvent: onChange });
     handles.set(worktreeId, handle);
     void loadStatus(worktreePath)
@@ -101,15 +102,21 @@ export function registerFilesHandlers(
   };
 
   ipcMain.handle('files:tree', async (_, req: { worktreeId: string; relPath: string | null }) => {
-    const root = getWorktreeRoot(req.worktreeId);
-    if (!root) return [];
-    ensureWatcher(req.worktreeId, root);
-    if (req.relPath === null) {
-      return await readChildren(resolve(root), resolve(root));
+    const perfLabel = `[perf] ipc/files files:tree (${req.worktreeId} :: ${req.relPath ?? '<root>'})`;
+    console.time(perfLabel);
+    try {
+      const root = getWorktreeRoot(req.worktreeId);
+      if (!root) return [];
+      ensureWatcher(req.worktreeId, root);
+      if (req.relPath === null) {
+        return await readChildren(resolve(root), resolve(root));
+      }
+      const resolved = await resolveWithinRoot(root, req.relPath);
+      if (!resolved) return [];
+      return await readChildren(resolved.abs, resolve(root));
+    } finally {
+      console.timeEnd(perfLabel);
     }
-    const resolved = await resolveWithinRoot(root, req.relPath);
-    if (!resolved) return [];
-    return await readChildren(resolved.abs, resolve(root));
   });
 
   ipcMain.handle('files:read', async (_, req: { worktreeId: string; relPath: string }) => {

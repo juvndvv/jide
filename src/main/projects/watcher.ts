@@ -34,6 +34,8 @@ export function createWatcher(opts: WatcherOptions): WatcherHandle {
   let timer: NodeJS.Timeout | null = null;
   let active: FSWatcher | null = null;
   let disposed = false;
+  const perfLabel = `[perf] projects/watcher ${opts.projectId} (${opts.repoRoot})`;
+  console.time(perfLabel);
 
   const fire = (): void => {
     timer = null;
@@ -60,6 +62,19 @@ export function createWatcher(opts: WatcherOptions): WatcherHandle {
       // Polling at 1s is a reasonable trade-off when EMFILE forces this path:
       // a developer waits ~1s for the status badge, no fd cost.
       interval: usePolling ? 1000 : undefined,
+    });
+    w.once('ready', () => {
+      console.timeEnd(perfLabel);
+      const watched = w.getWatched();
+      let dirCount = 0;
+      let fileCount = 0;
+      for (const dir of Object.keys(watched)) {
+        dirCount++;
+        fileCount += watched[dir]?.length ?? 0;
+      }
+      console.log(
+        `[perf] projects/watcher ${opts.projectId} ready: ${dirCount} dirs, ${fileCount} entries (polling=${usePolling})`,
+      );
     });
     w.on('all', () => {
       if (timer) clearTimeout(timer);
@@ -107,6 +122,8 @@ export function createWatcherManager(
   const handles = new Map<string, WatcherHandle>();
   return {
     reconcile(projects) {
+      const reconcileLabel = `[perf] projects/watcher reconcile (${projects.length} projects)`;
+      console.time(reconcileLabel);
       const seen = new Set<string>();
       for (const p of projects) {
         seen.add(p.id);
@@ -117,6 +134,7 @@ export function createWatcherManager(
           );
         }
       }
+      console.timeEnd(reconcileLabel);
       for (const id of [...handles.keys()]) {
         if (!seen.has(id)) {
           handles

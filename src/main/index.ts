@@ -32,8 +32,11 @@ let filesManager: FileWatcherManager | null = null;
 app
   .whenReady()
   .then(async () => {
+    console.log(`[perf] boot whenReady fired at uptime ${process.uptime().toFixed(3)}s`);
+    console.time('[perf] boot total');
     store = createStore({ cwd: process.env.JIDE_TEST_STORE_CWD });
     const registry = createProjectRegistry(store);
+    console.log(`[perf] boot registry.list() returned ${registry.list().length} projects`);
     manager = new SessionManager({
       maxSessionsPerWorktree: store.get('maxSessionsPerWorktree') ?? 4,
     });
@@ -79,8 +82,13 @@ app
       void emitClaudeStateRollup(registry, payload.worktreeId, payload.sessions);
     });
 
+    console.time('[perf] boot initial reconcile()');
     reconcile();
+    console.timeEnd('[perf] boot initial reconcile()');
+    console.time('[perf] boot createMainWindow');
     createMainWindow();
+    console.timeEnd('[perf] boot createMainWindow');
+    console.timeEnd('[perf] boot total');
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) createMainWindow();

@@ -11,10 +11,17 @@ import type { GitFileStatus } from '@shared/files';
  *     > 'R' (renamed) > 'C' (copied) > 'U' (unmerged)
  */
 export async function loadStatus(repoRoot: string): Promise<Map<string, GitFileStatus>> {
+  const perfLabel = `[perf] git-status loadStatus (${repoRoot})`;
+  console.time(perfLabel);
   const { stdout } = await gitExec(repoRoot, [
     'status', '--porcelain=v1', '-z', '--untracked-files=all',
   ]);
-  return parsePorcelain(stdout);
+  const map = parsePorcelain(stdout);
+  console.timeEnd(perfLabel);
+  console.log(
+    `[perf] git-status loadStatus parsed ${map.size} entries (${stdout.length} stdout bytes)`,
+  );
+  return map;
 }
 
 export function parsePorcelain(stdout: string): Map<string, GitFileStatus> {
