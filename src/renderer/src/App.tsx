@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { TopChromeStrip } from './components/Chrome/TopChromeStrip';
@@ -11,6 +11,7 @@ import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
 import { useGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
 import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
+import { OpenFileProvider } from './components/Chat/OpenFileContext';
 
 export function App(): JSX.Element {
   const { theme, sidebarSide } = useTheme();
@@ -36,6 +37,19 @@ export function App(): JSX.Element {
 
   const { layout, ops } = useWorktreeLayout(activeWorktreeId);
 
+  const onOpenFile = useCallback(
+    async (toolPath: string) => {
+      if (!activeWorktreeId) return;
+      const res = await window.jide.files.openInViewer(activeWorktreeId, toolPath);
+      if (!res) {
+        console.warn('[jide] tool message path outside worktree:', toolPath);
+        return;
+      }
+      ops.openViewer(res.relPath);
+    },
+    [activeWorktreeId, ops],
+  );
+
   const handlers = useMemo(
     () => ({
       onToggleTweaks: () => setTweaksOpen((v) => !v),
@@ -48,6 +62,7 @@ export function App(): JSX.Element {
         else if (tweaksOpen) setTweaksOpen(false);
       },
       onToggleTerminal: () => ops.cycleTerminal(),
+      onToggleViewer: () => ops.toggleViewer(),
     }),
     [activeProject, projects, dialogOpenFor, tweaksOpen, ops],
   );
@@ -93,37 +108,39 @@ export function App(): JSX.Element {
           tweaksOpen={tweaksOpen}
           onToggleTweaks={() => setTweaksOpen((v) => !v)}
         />
-        <main
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            minWidth: 0,
-            minHeight: 0,
-            background: theme.panelBg,
-          }}
-        >
-          <TabBar
-            tabs={tabs}
-            projects={projects}
-            worktreesById={worktreesById}
-            activeWorktreeId={activeWorktreeId}
-            onSelect={(wid, pid) => open(wid, pid)}
-            onClose={close}
-            onNew={() => {
-              if (activeProject) setDialogOpenFor(activeProject.id);
-              else if (projects[0]) setDialogOpenFor(projects[0].id);
+        <OpenFileProvider value={onOpenFile}>
+          <main
+            style={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              minWidth: 0,
+              minHeight: 0,
+              background: theme.panelBg,
             }}
-          />
-          <WorktreeView
-            worktreeId={activeWorktreeId}
-            worktree={activeWt}
-            shellName="zsh"
-            maxSessionsPerWorktree={maxSessions}
-            layout={layout}
-            ops={ops}
-          />
-        </main>
+          >
+            <TabBar
+              tabs={tabs}
+              projects={projects}
+              worktreesById={worktreesById}
+              activeWorktreeId={activeWorktreeId}
+              onSelect={(wid, pid) => open(wid, pid)}
+              onClose={close}
+              onNew={() => {
+                if (activeProject) setDialogOpenFor(activeProject.id);
+                else if (projects[0]) setDialogOpenFor(projects[0].id);
+              }}
+            />
+            <WorktreeView
+              worktreeId={activeWorktreeId}
+              worktree={activeWt}
+              shellName="zsh"
+              maxSessionsPerWorktree={maxSessions}
+              layout={layout}
+              ops={ops}
+            />
+          </main>
+        </OpenFileProvider>
       </div>
       <StatusBar
         project={activeProject}
