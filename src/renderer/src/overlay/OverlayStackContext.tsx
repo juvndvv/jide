@@ -18,7 +18,6 @@ export interface StackEntry {
 export interface OverlayStack {
   push: (entry: StackEntry) => void;
   remove: (id: string) => void;
-  update: (id: string, onEsc: () => void) => void;
   topId: () => string | null;
   size: () => number;
   getTopOnEsc: () => (() => void) | null;
@@ -75,18 +74,6 @@ export function OverlayStackProvider({ children }: { children: ReactNode }): JSX
         if (next.length === list.length) return;
         entriesRef.current = next;
         emit();
-      },
-      update: (id: string, onEsc: () => void) => {
-        const list = entriesRef.current;
-        const idx = list.findIndex((e) => e.id === id);
-        if (idx < 0) return;
-        const current = list[idx];
-        if (!current) return;
-        const updated: StackEntry = { id: current.id, z: current.z, onEsc };
-        const next = list.slice();
-        next[idx] = updated;
-        entriesRef.current = next;
-        // No emit: identity of onEsc changes but reactive selectors don't depend on it.
       },
       topId: () => {
         const list = entriesRef.current;

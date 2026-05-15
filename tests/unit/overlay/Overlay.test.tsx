@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { useRef, type JSX, type ReactNode } from 'react';
+import { useEffect, useRef, type JSX, type ReactNode } from 'react';
 import { Overlay } from '../../../src/renderer/src/overlay/Overlay';
 import {
   OverlayStackProvider,
@@ -38,16 +38,19 @@ function StackProbe({
 }): JSX.Element {
   const stack = useOverlayStack();
   const sentRef = useRef(false);
-  if (!sentRef.current) {
+  useEffect(() => {
+    if (sentRef.current) return;
     sentRef.current = true;
     onReady(stack);
-  }
+  }, [stack, onReady]);
   return <></>;
 }
 
 function ModalOpenProbe({ onChange }: { onChange: (v: boolean) => void }): JSX.Element {
   const v = useModalOpen();
-  onChange(v);
+  useEffect(() => {
+    onChange(v);
+  }, [v, onChange]);
   return <span data-testid="modal-open">{String(v)}</span>;
 }
 
@@ -229,5 +232,19 @@ describe('Overlay', () => {
 
     expect(warn).toHaveBeenCalled();
     expect(stackApi?.size()).toBe(1);
+  });
+
+  it('handles overlay with no focusable children', () => {
+    render(
+      <Providers>
+        <Overlay id="z" onClose={() => {}} ariaLabel="No focusables">
+          <span>just text</span>
+        </Overlay>
+      </Providers>,
+    );
+    const root = document.querySelector('[data-overlay-id="z"]') as HTMLElement;
+    expect(root).toBeTruthy();
+    expect(root.getAttribute('tabindex')).toBe('-1');
+    expect(document.activeElement).toBe(root);
   });
 });

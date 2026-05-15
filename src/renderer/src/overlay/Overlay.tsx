@@ -28,23 +28,15 @@ export function Overlay(props: OverlayProps): JSX.Element {
   const { theme } = useTheme();
   const stack = useOverlayStack();
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const pushedRef = useRef(false);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
-    if (pushedRef.current) return;
-    pushedRef.current = true;
     stack.push({ id, z, onEsc: () => onCloseRef.current() });
     return () => {
-      pushedRef.current = false;
       stack.remove(id);
     };
   }, [stack, id, z]);
-
-  useEffect(() => {
-    stack.update(id, () => onCloseRef.current());
-  }, [stack, id, onClose]);
 
   useFocusTrap(rootRef);
 
@@ -80,6 +72,7 @@ export function Overlay(props: OverlayProps): JSX.Element {
         zIndex: z,
       }}
     >
+      {/* display:contents so children remain direct flex items of the root while still capturing the stopPropagation click */}
       <div onClick={onContentClick} style={{ display: 'contents' }}>
         {children}
       </div>
