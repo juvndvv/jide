@@ -28,7 +28,7 @@ export function WorktreeView({
     />
   );
 
-  const innerContent = (worktreeId && worktree && layout.terminal !== 'off')
+  const chatPlusTerminal = (worktreeId && worktree && layout.terminal !== 'off')
     ? (
       <SplitContainer
         axis={layout.terminal === 'bottom' ? 'h' : 'v'}
@@ -49,7 +49,7 @@ export function WorktreeView({
     : chat;
 
   if (!worktreeId || !layout.viewer.open) {
-    return innerContent;
+    return chatPlusTerminal;
   }
 
   return (
@@ -60,11 +60,11 @@ export function WorktreeView({
         <FileViewerPanel
           worktreeId={worktreeId}
           selectedPath={layout.viewer.path}
-          onSelect={(relPath) => ops.setViewerPath(relPath)}
+          onSelect={ops.setViewerPath}
           onClose={ops.closeViewer}
         />
       }
-      second={innerContent}
+      second={chatPlusTerminal}
     />
   );
 }
