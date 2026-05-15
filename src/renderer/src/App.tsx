@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useMemo, useState, type JSX } from 'react';
+import { useCallback, useEffect, useState, type JSX } from 'react';
+import type { SessionSnapshot } from '@shared/session';
 import { Sidebar } from './components/Sidebar';
 import { HelpDialog } from './components/dialogs/HelpDialog';
+import { KillConfirmDialog } from './components/dialogs/KillConfirmDialog';
 import { NewWorktreeDialog } from './components/dialogs/NewWorktreeDialog';
 import { TopChromeStrip } from './components/Chrome/TopChromeStrip';
 import { StatusBar } from './components/StatusBar/StatusBar';
@@ -10,7 +12,7 @@ import { useProjects } from './shortcuts/useProjects';
 import { useAllWorktrees } from './shortcuts/useAllWorktrees';
 import { useTabs } from './shortcuts/useTabs';
 import { useTheme } from './theme/useTheme';
-import { useGlobalShortcuts, useLegacyGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
+import { useGlobalShortcuts } from './shortcuts/useGlobalShortcuts';
 import { ShortcutContextProvider, useSetModalOpen } from './shortcuts/ShortcutContext';
 import { useShortcutAction } from './shortcuts/useShortcutAction';
 import { useWorktreeLayout } from './shortcuts/useWorktreeLayout';
@@ -42,6 +44,10 @@ function AppInner(): JSX.Element {
   const [maxSessions, setMaxSessions] = useState<number>(4);
   const [tweaksOpen, setTweaksOpen] = useState<boolean>(false);
   const [helpOpen, setHelpOpen] = useState<boolean>(false);
+  const [killTarget, setKillTarget] = useState<{
+    worktreeId: string;
+    session: SessionSnapshot;
+  } | null>(null);
 
   useEffect(() => {
     window.jide.settings
@@ -79,25 +85,12 @@ function AppInner(): JSX.Element {
     [activeWorktreeId, ops],
   );
 
-  const handlers = useMemo(
-    () => ({
-      onToggleTweaks: () => setTweaksOpen((v) => !v),
-      onNewWorktree: () => {
-        if (activeProject) setDialogOpenFor(activeProject.id);
-        else if (projects[0]) setDialogOpenFor(projects[0].id);
-      },
-      onEscape: () => {
-        if (dialogOpenFor) setDialogOpenFor(null);
-        else if (tweaksOpen) setTweaksOpen(false);
-      },
-      onToggleTerminal: () => ops.cycleTerminal(),
-      onToggleViewer: () => ops.toggleViewer(),
-    }),
-    [activeProject, projects, dialogOpenFor, tweaksOpen, ops],
-  );
+  const openNewWorktree = useCallback(() => {
+    if (activeProject) setDialogOpenFor(activeProject.id);
+    else if (projects[0]) setDialogOpenFor(projects[0].id);
+  }, [activeProject, projects]);
 
   useGlobalShortcuts();
-  useLegacyGlobalShortcuts(handlers);
 
   const stack = useOverlayStack();
   const modalOpen = useModalOpen();
@@ -112,6 +105,14 @@ function AppInner(): JSX.Element {
   const palette = usePaletteOpen();
   useShortcutAction('palette.open', () => palette.setOpen(true));
   useShortcutAction('help.open', () => setHelpOpen(true));
+  useShortcutAction('tweaks.toggle', () => setTweaksOpen((v) => !v));
+  useShortcutAction('worktree.new', openNewWorktree);
+  useShortcutAction('terminal.toggle', () => ops.cycleTerminal());
+  useShortcutAction('viewer.toggle', () => ops.toggleViewer());
+
+  const onRequestKill = useCallback((worktreeId: string, session: SessionSnapshot) => {
+    setKillTarget({ worktreeId, session });
+  }, []);
 
   return (
     <div
@@ -182,6 +183,7 @@ function AppInner(): JSX.Element {
               maxSessionsPerWorktree={maxSessions}
               layout={layout}
               ops={ops}
+              onRequestKill={onRequestKill}
             />
           </main>
         </OpenFileProvider>
@@ -214,6 +216,18 @@ function AppInner(): JSX.Element {
       />
 
       {helpOpen && <HelpDialog onClose={() => setHelpOpen(false)} />}
+
+      {killTarget && (
+        <KillConfirmDialog
+          worktreeId={killTarget.worktreeId}
+          session={killTarget.session}
+          onCancel={() => setKillTarget(null)}
+          onConfirm={async () => {
+            await window.jide.sessions.kill(killTarget.worktreeId, killTarget.session.id.uuid);
+            setKillTarget(null);
+          }}
+        />
+      )}
     </div>
   );
 }

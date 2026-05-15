@@ -1,6 +1,7 @@
 import { useEffect, type JSX } from 'react';
 import type { WorktreeLayout } from '@shared/layout';
 import { countLeaves, findLeaf, flattenLeafIds } from '@shared/layout';
+import type { SessionSnapshot } from '@shared/session';
 import type { WorktreeLayoutOps } from '../../shortcuts/useWorktreeLayout';
 import { useTheme } from '../../theme/useTheme';
 import { useSessionsList } from '../../shortcuts/useSessionsList';
@@ -21,6 +22,7 @@ export interface ChatPanelProps {
   maxSessionsPerWorktree?: number;
   layout: WorktreeLayout | null;
   ops: WorktreeLayoutOps | null;
+  onRequestKill?: (worktreeId: string, session: SessionSnapshot) => void;
 }
 
 export function ChatPanel({
@@ -28,6 +30,7 @@ export function ChatPanel({
   maxSessionsPerWorktree = DEFAULT_MAX_SESSIONS,
   layout,
   ops,
+  onRequestKill,
 }: ChatPanelProps): JSX.Element {
   const { theme } = useTheme();
   const { sessions, activeId, setActive, create, rename, kill, capReached } =
@@ -58,6 +61,18 @@ export function ChatPanel({
       void create();
     },
     worktreeId !== null && !capReached,
+  );
+
+  const activeSession =
+    activeId !== null ? (sessions.find((s) => s.id.uuid === activeId) ?? null) : null;
+
+  useShortcutAction(
+    'session.kill',
+    () => {
+      if (!worktreeId || !activeSession || !onRequestKill) return;
+      onRequestKill(worktreeId, activeSession);
+    },
+    worktreeId !== null && activeSession !== null && onRequestKill !== undefined,
   );
 
   // When a single session is loaded and NO pane has a session assigned yet,
