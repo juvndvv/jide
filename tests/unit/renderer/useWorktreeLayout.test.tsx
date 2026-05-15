@@ -324,4 +324,102 @@ describe('useWorktreeLayout', () => {
       expect(result.current.cap.count).toBe(MAX_CHAT_PANES);
     });
   });
+
+  describe('viewer ops', () => {
+    it('hydration migration: stored layout without viewer gets defaulted to { open: false, path: null, ratio: 0.28 }', async () => {
+      const emptyLayout = makeEmptyLayout();
+      const storedWithoutViewer = { ...emptyLayout } as Partial<WorktreeLayout> & Omit<WorktreeLayout, 'viewer'>;
+      // Simulate a pre-fase-7 layout that lacks the viewer field
+      const storedLayout = { ...storedWithoutViewer } as Record<string, unknown>;
+      delete storedLayout['viewer'];
+
+      const { get, list } = setupJideMock({
+        storedLayout: { 'wt-1': storedLayout as unknown as WorktreeLayout },
+      });
+
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      expect(result.current.layout.viewer).toEqual({ open: false, path: null, ratio: 0.28 });
+    });
+
+    it('toggleViewer: open then toggle closes; toggle again opens', async () => {
+      const { get, list } = setupJideMock();
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      act(() => { result.current.ops.openViewer('/src/index.ts'); });
+      expect(result.current.layout.viewer.open).toBe(true);
+
+      act(() => { result.current.ops.toggleViewer(); });
+      expect(result.current.layout.viewer.open).toBe(false);
+
+      act(() => { result.current.ops.toggleViewer(); });
+      expect(result.current.layout.viewer.open).toBe(true);
+    });
+
+    it('openViewer: opens and sets path', async () => {
+      const { get, list } = setupJideMock();
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      act(() => { result.current.ops.openViewer('src/app.ts'); });
+
+      expect(result.current.layout.viewer.open).toBe(true);
+      expect(result.current.layout.viewer.path).toBe('src/app.ts');
+    });
+
+    it('closeViewer: no-op when already closed', async () => {
+      const { get, list } = setupJideMock();
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      expect(result.current.layout.viewer.open).toBe(false);
+      const layoutBefore = result.current.layout;
+
+      act(() => { result.current.ops.closeViewer(); });
+
+      expect(result.current.layout).toBe(layoutBefore);
+    });
+
+    it('setViewerPath: changes path and preserves open state', async () => {
+      const { get, list } = setupJideMock();
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      act(() => { result.current.ops.openViewer('src/a.ts'); });
+      expect(result.current.layout.viewer.open).toBe(true);
+
+      act(() => { result.current.ops.setViewerPath('src/b.ts'); });
+      expect(result.current.layout.viewer.path).toBe('src/b.ts');
+      expect(result.current.layout.viewer.open).toBe(true);
+    });
+
+    it('setViewerRatio: clamps to [0.15, 0.6]', async () => {
+      const { get, list } = setupJideMock();
+      const { result } = renderHook(() => useWorktreeLayout('wt-1'));
+
+      await waitFor(() => expect(get).toHaveBeenCalled());
+      await waitFor(() => expect(list).toHaveBeenCalled());
+
+      act(() => { result.current.ops.setViewerRatio(0.05); });
+      expect(result.current.layout.viewer.ratio).toBe(0.15);
+
+      act(() => { result.current.ops.setViewerRatio(0.9); });
+      expect(result.current.layout.viewer.ratio).toBe(0.6);
+
+      act(() => { result.current.ops.setViewerRatio(0.4); });
+      expect(result.current.layout.viewer.ratio).toBe(0.4);
+    });
+  });
 });
