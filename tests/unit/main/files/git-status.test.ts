@@ -61,7 +61,7 @@ describe('parsePorcelain', () => {
   it('handles malformed input without a NUL terminator without throwing', () => {
     expect(() => parsePorcelain(' M unterminated')).not.toThrow();
     const result = parsePorcelain(' M unterminated');
-    expect(result instanceof Map).toBe(true);
+    expect(result.size).toBe(0);
   });
 
   it('parses a mixed sequence correctly', () => {

@@ -1,8 +1,5 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { gitExec } from '../git/exec.js';
 import type { GitFileStatus } from '@shared/files';
-
-const exec = promisify(execFile);
 
 /**
  * Returns a map relPath (POSIX) → status code. The map is sparse: only files
@@ -14,36 +11,38 @@ const exec = promisify(execFile);
  *     > 'R' (renamed) > 'C' (copied) > 'U' (unmerged)
  */
 export async function loadStatus(repoRoot: string): Promise<Map<string, GitFileStatus>> {
-  const { stdout } = await exec(
-    'git',
-    ['status', '--porcelain=v1', '-z', '--untracked-files=all'],
-    { cwd: repoRoot, maxBuffer: 16 * 1024 * 1024 },
-  );
+  const { stdout } = await gitExec(repoRoot, [
+    'status', '--porcelain=v1', '-z', '--untracked-files=all',
+  ]);
   return parsePorcelain(stdout);
 }
 
 export function parsePorcelain(stdout: string): Map<string, GitFileStatus> {
   const map = new Map<string, GitFileStatus>();
-  const buf = stdout;
   let i = 0;
-  while (i < buf.length) {
-    if (i + 3 > buf.length) break;
-    const x = buf.charAt(i);
-    const y = buf.charAt(i + 1);
-    if (buf.charAt(i + 2) !== ' ') {
+  while (i < stdout.length) {
+    if (i + 3 > stdout.length) break;
+    const x = stdout.charAt(i);
+    const y = stdout.charAt(i + 1);
+    // Defensive abort on unrecognized record header: porcelain v1 has no sync
+    // token, so resuming mid-stream after a malformed entry is unreliable.
+    if (stdout.charAt(i + 2) !== ' ') {
       break;
     }
     i += 3;
-    const end = buf.indexOf('\0', i);
+    const end = stdout.indexOf('\0', i);
     if (end === -1) break;
-    const path = buf.slice(i, end);
+    const path = stdout.slice(i, end);
     i = end + 1;
     if (x === 'R' || x === 'C') {
-      const oldEnd = buf.indexOf('\0', i);
+      const oldEnd = stdout.indexOf('\0', i);
       if (oldEnd === -1) break;
       i = oldEnd + 1;
     }
-    map.set(path, pickStatus(x, y));
+    const status = pickStatus(x, y);
+    if (status !== null) {
+      map.set(path, status);
+    }
   }
   return map;
 }
