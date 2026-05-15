@@ -34,7 +34,8 @@
     "node-pty": "^1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-window": "^1.8.10"
+    "react-window": "^1.8.10",
+    "shiki": "^1.22.0"
   },
   "devDependencies": {
     "@electron/rebuild": "^3",
