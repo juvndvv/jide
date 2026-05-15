@@ -8,6 +8,7 @@ import { registerProjects } from './projects.js';
 import { registerWorktrees } from './worktrees.js';
 import { registerSessions } from './sessions.js';
 import { registerTerminalHandlers } from './terminal.js';
+import { registerFilesHandlers, type FileWatcherManager } from './files.js';
 
 export interface IpcDeps {
   store: JideStore;
@@ -15,13 +16,20 @@ export interface IpcDeps {
   manager: SessionManager;
   afterProjectsMutation: () => void;
   pty?: PtyManager | null;
+  getWorktreeRoot: (worktreeId: string) => string | null;
 }
 
-export function registerAllHandlers(deps: IpcDeps): void {
+export function registerAllHandlers(deps: IpcDeps): { filesManager: FileWatcherManager } {
+  const filesManager = registerFilesHandlers(deps.getWorktreeRoot);
+
   registerPing();
   registerSettings(deps.store);
   registerProjects(deps.registry, deps.afterProjectsMutation);
-  registerWorktrees(deps.registry);
+  registerWorktrees(deps.registry, {
+    onWorktreeRemoved: (worktreeId) => filesManager.release(worktreeId),
+  });
   registerSessions(deps.registry, deps.manager, deps.store);
   registerTerminalHandlers(deps.pty ?? null);
+
+  return { filesManager };
 }

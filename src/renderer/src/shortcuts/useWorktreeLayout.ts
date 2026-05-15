@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   assignSession,
+  closeViewer,
   countLeaves,
   flattenLeafIds,
   makeEmptyLayout,
   MAX_CHAT_PANES,
   mergeLeaf,
+  openViewer as openViewerLayout,
   pruneOrphans,
   setRatio,
+  setViewerPath as setViewerPathLayout,
+  setViewerRatio,
   splitLeaf,
   toggleAxis,
+  toggleViewer,
 } from '@shared/layout.js';
 import type { PaneAxis, PaneTree, TerminalSplit, WorktreeLayout } from '@shared/layout.js';
 
@@ -27,6 +32,11 @@ export interface WorktreeLayoutOps {
   toggleTerminalOrientation: () => void;
   closeTerminal: () => void;
   setTerminalRatio: (ratio: number) => void;
+  toggleViewer: () => void;
+  openViewer: (path: string | null) => void;
+  closeViewer: () => void;
+  setViewerPath: (path: string | null) => void;
+  setViewerRatio: (ratio: number) => void;
 }
 
 export interface UseWorktreeLayout {
@@ -80,7 +90,8 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
         ? stored.activePaneId
         : (leafIds[0] ?? stored.activePaneId);
 
-      setLayout({ ...stored, panes: prunedPanes, activePaneId });
+      const viewer = stored.viewer ?? { open: false, path: null, ratio: 0.28 };
+      setLayout({ ...stored, panes: prunedPanes, activePaneId, viewer });
       hydratedFor.current = worktreeId;
     })().catch((err: unknown) => {
       console.error('[jide] useWorktreeLayout hydration failed', err);
@@ -240,6 +251,60 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
     [worktreeId],
   );
 
+  const toggleViewerOp = useCallback(() => {
+    setLayout((prev) => {
+      const next = toggleViewer(prev);
+      if (next === prev) return prev;
+      schedulePersist(worktreeId, next);
+      return next;
+    });
+  }, [worktreeId]);
+
+  const openViewerOp = useCallback(
+    (path: string | null) => {
+      setLayout((prev) => {
+        if (prev.viewer.open && prev.viewer.path === path) return prev;
+        const next = openViewerLayout(prev, path);
+        schedulePersist(worktreeId, next);
+        return next;
+      });
+    },
+    [worktreeId],
+  );
+
+  const closeViewerOp = useCallback(() => {
+    setLayout((prev) => {
+      const next = closeViewer(prev);
+      if (next === prev) return prev;
+      schedulePersist(worktreeId, next);
+      return next;
+    });
+  }, [worktreeId]);
+
+  const setViewerPathOp = useCallback(
+    (path: string | null) => {
+      setLayout((prev) => {
+        if (prev.viewer.path === path) return prev;
+        const next = setViewerPathLayout(prev, path);
+        schedulePersist(worktreeId, next);
+        return next;
+      });
+    },
+    [worktreeId],
+  );
+
+  const setViewerRatioOp = useCallback(
+    (ratio: number) => {
+      setLayout((prev) => {
+        const next = setViewerRatio(prev, ratio);
+        if (next === prev) return prev;
+        schedulePersist(worktreeId, next);
+        return next;
+      });
+    },
+    [worktreeId],
+  );
+
   const ops = useMemo<WorktreeLayoutOps>(
     () => ({
       splitActivePane,
@@ -253,6 +318,11 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
       toggleTerminalOrientation,
       closeTerminal,
       setTerminalRatio,
+      toggleViewer: toggleViewerOp,
+      openViewer: openViewerOp,
+      closeViewer: closeViewerOp,
+      setViewerPath: setViewerPathOp,
+      setViewerRatio: setViewerRatioOp,
     }),
     [
       splitActivePane,
@@ -266,6 +336,11 @@ export function useWorktreeLayout(worktreeId: string | null): UseWorktreeLayout 
       toggleTerminalOrientation,
       closeTerminal,
       setTerminalRatio,
+      toggleViewerOp,
+      openViewerOp,
+      closeViewerOp,
+      setViewerPathOp,
+      setViewerRatioOp,
     ],
   );
 

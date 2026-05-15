@@ -1,6 +1,7 @@
 import type { SettingsKey, SettingsSchema } from './settings.js';
 import type { Project, Worktree } from './project.js';
 import type { SessionSnapshot } from './session.js';
+import type { FileNode, FileReadResult, FileChangeEvent, FileStatusChangeEvent } from './files.js';
 
 export const CHANNELS = [
   'ping',
@@ -26,6 +27,9 @@ export const CHANNELS = [
   'terminal:write',
   'terminal:resize',
   'terminal:kill',
+  'files:tree',
+  'files:read',
+  'files:open-in-viewer',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
@@ -71,6 +75,18 @@ export type ChannelMap = {
   'terminal:write': { req: { worktreeId: string; data: string }; res: void };
   'terminal:resize': { req: { worktreeId: string; cols: number; rows: number }; res: void };
   'terminal:kill': { req: { worktreeId: string }; res: void };
+  'files:tree': {
+    req: { worktreeId: string; relPath: string | null };
+    res: FileNode[];
+  };
+  'files:read': {
+    req: { worktreeId: string; relPath: string };
+    res: FileReadResult;
+  };
+  'files:open-in-viewer': {
+    req: { worktreeId: string; pathFromTool: string };
+    res: { relPath: string } | null;
+  };
 };
 
 export type Req<C extends Channel> = ChannelMap[C]['req'];
@@ -84,6 +100,8 @@ export const EVENTS = [
   'sessions:list-changed',
   'terminal:data',
   'terminal:exit',
+  'files:change',
+  'files:status-changed',
 ] as const;
 export type Event = (typeof EVENTS)[number];
 
@@ -96,6 +114,8 @@ export type EventMap = {
   'terminal:data': { worktreeId: string; data: string };
   /** signal uses string | null for renderer-bundle compatibility (no node types in web tsconfig). */
   'terminal:exit': { worktreeId: string; code: number | null; signal: string | null };
+  'files:change': FileChangeEvent;
+  'files:status-changed': FileStatusChangeEvent;
 };
 
 export type EventPayload<E extends Event> = EventMap[E];
@@ -142,6 +162,14 @@ export interface JideApi {
     write: (worktreeId: string, data: string) => Promise<void>;
     resize: (worktreeId: string, cols: number, rows: number) => Promise<void>;
     kill: (worktreeId: string) => Promise<void>;
+  };
+  files: {
+    tree: (worktreeId: string, relPath: string | null) => Promise<FileNode[]>;
+    read: (worktreeId: string, relPath: string) => Promise<FileReadResult>;
+    openInViewer: (
+      worktreeId: string,
+      pathFromTool: string,
+    ) => Promise<{ relPath: string } | null>;
   };
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void;
 }

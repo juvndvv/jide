@@ -14,6 +14,7 @@ import { detectShell } from './pty/shell-detect.js';
 import { probeNativeBindings } from './pty/health.js';
 import type { SessionSnapshot } from '@shared/session';
 import type { ProjectRegistry } from './projects/index.js';
+import type { FileWatcherManager } from './ipc/files.js';
 
 // Safety net: anything that escapes a .catch() lands here with a full stack.
 // In dev this surfaces the offending call site; in production it keeps the
@@ -26,6 +27,7 @@ process.on('unhandledRejection', (reason, promise) => {
 let store: JideStore | null = null;
 let manager: SessionManager | null = null;
 let pty: PtyManager | null = null;
+let filesManager: FileWatcherManager | null = null;
 
 app
   .whenReady()
@@ -59,13 +61,19 @@ app
       watcherMgr.reconcile(registry.list().map((p) => ({ id: p.id, path: p.path })));
     };
 
-    registerAllHandlers({
+    const { filesManager: fm } = registerAllHandlers({
       store,
       registry,
       manager,
       afterProjectsMutation: reconcile,
       pty,
+      getWorktreeRoot: (worktreeId: string) => {
+        const colonIdx = worktreeId.indexOf(':');
+        if (colonIdx < 0) return null;
+        return worktreeId.slice(colonIdx + 1);
+      },
     });
+    filesManager = fm;
 
     manager.on('list-changed', (payload: { worktreeId: string; sessions: SessionSnapshot[] }) => {
       void emitClaudeStateRollup(registry, payload.worktreeId, payload.sessions);
@@ -94,6 +102,7 @@ app.on('before-quit', () => {
     manager.killAll();
   }
   if (pty) pty.killAll();
+  if (filesManager) void filesManager.disposeAll();
 });
 
 app.on('window-all-closed', () => {

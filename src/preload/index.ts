@@ -4,6 +4,7 @@ import { EVENTS } from '@shared/ipc';
 import type { SettingsKey, SettingsSchema } from '@shared/settings';
 import type { Project, Worktree } from '@shared/project';
 import type { SessionSnapshot } from '@shared/session';
+import type { FileNode, FileReadResult } from '@shared/files';
 
 const api: JideApi = {
   ping: () => ipcRenderer.invoke('ping') as Promise<string>,
@@ -65,6 +66,17 @@ const api: JideApi = {
       ipcRenderer.invoke('terminal:resize', { worktreeId, cols, rows }) as Promise<void>,
     kill: (worktreeId) =>
       ipcRenderer.invoke('terminal:kill', { worktreeId }) as Promise<void>,
+  },
+  files: {
+    tree: (worktreeId, relPath) =>
+      ipcRenderer.invoke('files:tree', { worktreeId, relPath }) as Promise<FileNode[]>,
+    read: (worktreeId, relPath) =>
+      ipcRenderer.invoke('files:read', { worktreeId, relPath }) as Promise<FileReadResult>,
+    openInViewer: (worktreeId, pathFromTool) =>
+      ipcRenderer.invoke('files:open-in-viewer', {
+        worktreeId,
+        pathFromTool,
+      }) as Promise<{ relPath: string } | null>,
   },
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void): (() => void) => {
     if (!(EVENTS as readonly string[]).includes(event)) {
