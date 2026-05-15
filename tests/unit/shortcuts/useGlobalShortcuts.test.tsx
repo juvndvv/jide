@@ -2,13 +2,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, act } from '@testing-library/react';
 import { type JSX, type ReactNode } from 'react';
-import { useGlobalShortcuts } from '@renderer/shortcuts/useGlobalShortcuts';
-import {
-  ShortcutContextStateContext,
-  ShortcutDispatcherContext,
-  type ShortcutContext,
-  type ShortcutDispatcher,
-  type ShortcutId,
+import type {
+  ShortcutContext,
+  ShortcutDispatcher,
+  ShortcutId,
 } from '@renderer/shortcuts/ShortcutContext';
 
 function stubMacPlatform(): () => void {
@@ -44,7 +41,9 @@ function makeHarness(overrides?: Partial<ShortcutContext>): Harness {
   };
 }
 
-function renderEngine(harness: Harness): { unmount: () => void } {
+async function renderEngine(harness: Harness): Promise<{ unmount: () => void }> {
+  const ctxMod = await import('@renderer/shortcuts/ShortcutContext');
+  const { useGlobalShortcuts } = await import('@renderer/shortcuts/useGlobalShortcuts');
   const dispatcher: ShortcutDispatcher = {
     register: () => () => {},
     dispatch: harness.dispatch,
@@ -57,11 +56,11 @@ function renderEngine(harness: Harness): { unmount: () => void } {
 
   function Wrapper({ children }: { children: ReactNode }): JSX.Element {
     return (
-      <ShortcutContextStateContext.Provider value={harness.ctx}>
-        <ShortcutDispatcherContext.Provider value={dispatcher}>
+      <ctxMod.ShortcutContextStateContext.Provider value={harness.ctx}>
+        <ctxMod.ShortcutDispatcherContext.Provider value={dispatcher}>
           {children}
-        </ShortcutDispatcherContext.Provider>
-      </ShortcutContextStateContext.Provider>
+        </ctxMod.ShortcutDispatcherContext.Provider>
+      </ctxMod.ShortcutContextStateContext.Provider>
     );
   }
 
@@ -84,6 +83,7 @@ describe('useGlobalShortcuts', () => {
 
   beforeEach(() => {
     restorePlatform = stubMacPlatform();
+    vi.resetModules();
   });
 
   afterEach(() => {
@@ -91,57 +91,57 @@ describe('useGlobalShortcuts', () => {
     vi.restoreAllMocks();
   });
 
-  it('dispatches palette.open on meta+k when modalOpen=false', () => {
+  it('dispatches palette.open on meta+k when modalOpen=false', async () => {
     const harness = makeHarness({ modalOpen: false });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('k', { metaKey: true });
     expect(harness.dispatch).toHaveBeenCalledWith('palette.open');
     unmount();
   });
 
-  it('dispatches palette.open on meta+k even when modalOpen=true (ALWAYS)', () => {
+  it('dispatches palette.open on meta+k even when modalOpen=true (ALWAYS)', async () => {
     const harness = makeHarness({ modalOpen: true });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('k', { metaKey: true });
     expect(harness.dispatch).toHaveBeenCalledWith('palette.open');
     unmount();
   });
 
-  it('does NOT dispatch worktree.new when modalOpen=true (NOT_MODAL)', () => {
+  it('does NOT dispatch worktree.new when modalOpen=true (NOT_MODAL)', async () => {
     const harness = makeHarness({ modalOpen: true });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('n', { metaKey: true });
     expect(harness.dispatch).not.toHaveBeenCalledWith('worktree.new');
     unmount();
   });
 
-  it('does NOT dispatch overlay.close on escape when modalOpen=false (ONLY_MODAL)', () => {
+  it('does NOT dispatch overlay.close on escape when modalOpen=false (ONLY_MODAL)', async () => {
     const harness = makeHarness({ modalOpen: false });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('Escape');
     expect(harness.dispatch).not.toHaveBeenCalledWith('overlay.close');
     unmount();
   });
 
-  it('dispatches overlay.close on escape when modalOpen=true', () => {
+  it('dispatches overlay.close on escape when modalOpen=true', async () => {
     const harness = makeHarness({ modalOpen: true });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('Escape');
     expect(harness.dispatch).toHaveBeenCalledWith('overlay.close');
     unmount();
   });
 
-  it('does NOT dispatch help.open on "?" when inputFocused=true', () => {
+  it('does NOT dispatch help.open on "?" when inputFocused=true', async () => {
     const harness = makeHarness({ inputFocused: true });
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('?', { shiftKey: true });
     expect(harness.dispatch).not.toHaveBeenCalledWith('help.open');
     unmount();
   });
 
-  it('dispatches help.open on "?" when modalOpen=false and inputFocused=false', () => {
+  it('dispatches help.open on "?" when modalOpen=false and inputFocused=false', async () => {
     const harness = makeHarness();
-    const { unmount } = renderEngine(harness);
+    const { unmount } = await renderEngine(harness);
     fire('?', { shiftKey: true });
     expect(harness.dispatch).toHaveBeenCalledWith('help.open');
     unmount();

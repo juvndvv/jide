@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { keymap, type KeyBinding } from './keymap';
 import { parseKeys, matchKey, type ParsedKey } from './matchKeys';
 import { useShortcutContext, useShortcutDispatcher } from './ShortcutContext';
@@ -6,22 +6,29 @@ import { useShortcutAction } from './useShortcutAction';
 
 const parsed: Array<[ParsedKey, KeyBinding]> = keymap.map((b) => [parseKeys(b.keys), b]);
 
+const noop = (): void => {};
+
 export function useGlobalShortcuts(): void {
   const ctx = useShortcutContext();
   const dispatcher = useShortcutDispatcher();
+  const ctxRef = useRef(ctx);
+  ctxRef.current = ctx;
+  const dispatcherRef = useRef(dispatcher);
+  dispatcherRef.current = dispatcher;
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent): void => {
       for (const [p, binding] of parsed) {
-        if (!binding.when(ctx)) continue;
+        if (!binding.when(ctxRef.current)) continue;
         if (!matchKey(p, e)) continue;
         e.preventDefault();
-        dispatcher.dispatch(binding.id);
+        dispatcherRef.current.dispatch(binding.id);
         return;
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [ctx, dispatcher]);
+  }, []);
 }
 
 export interface GlobalShortcutHandlers {
@@ -33,7 +40,6 @@ export interface GlobalShortcutHandlers {
 }
 
 export function useLegacyGlobalShortcuts(handlers: GlobalShortcutHandlers): void {
-  const noop = (): void => {};
   useShortcutAction(
     'tweaks.toggle',
     handlers.onToggleTweaks ?? noop,

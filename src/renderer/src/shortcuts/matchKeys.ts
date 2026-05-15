@@ -1,5 +1,3 @@
-export type KeyToken = string;
-
 export interface ParsedKey {
   mods: { meta: boolean; shift: boolean; alt: boolean; ctrl: boolean };
   key: string;
@@ -16,6 +14,8 @@ function detectMac(): boolean {
   if (/Mac|iPhone|iPad|iPod/i.test(platform)) return true;
   return /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent ?? '');
 }
+
+const IS_MAC = detectMac();
 
 export function parseKeys(s: string): ParsedKey {
   const tokens = s
@@ -39,9 +39,8 @@ export function matchKey(parsed: ParsedKey, e: KeyboardEvent): boolean {
   if (eventKey !== parsed.key) return false;
 
   // Cross-platform 'meta' resolves to ctrlKey on non-mac platforms.
-  const isMac = detectMac();
-  const expectMeta = parsed.mods.meta && isMac;
-  const expectCtrl = parsed.mods.ctrl || (parsed.mods.meta && !isMac);
+  const expectMeta = parsed.mods.meta && IS_MAC;
+  const expectCtrl = parsed.mods.ctrl || (parsed.mods.meta && !IS_MAC);
 
   if (e.metaKey !== expectMeta) return false;
   if (e.ctrlKey !== expectCtrl) return false;

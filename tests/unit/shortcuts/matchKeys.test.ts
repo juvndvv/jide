@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { parseKeys, matchKey } from '@renderer/shortcuts/matchKeys';
+import { parseKeys } from '@renderer/shortcuts/matchKeys';
+import type * as MatchKeysModuleNamespace from '@renderer/shortcuts/matchKeys';
 
 function stubPlatform(platform: string, userAgent: string): () => void {
   const original = Object.getOwnPropertyDescriptor(window.navigator, 'platform');
@@ -11,6 +12,18 @@ function stubPlatform(platform: string, userAgent: string): () => void {
     if (original) Object.defineProperty(window.navigator, 'platform', original);
     if (originalUa) Object.defineProperty(window.navigator, 'userAgent', originalUa);
   };
+}
+
+type MatchKeysModule = typeof MatchKeysModuleNamespace;
+
+async function loadWithPlatform(
+  platform: string,
+  userAgent: string,
+): Promise<{ mod: MatchKeysModule; restore: () => void }> {
+  const restore = stubPlatform(platform, userAgent);
+  vi.resetModules();
+  const mod = await import('@renderer/shortcuts/matchKeys');
+  return { mod, restore };
 }
 
 describe('parseKeys', () => {
@@ -55,50 +68,80 @@ describe('matchKey', () => {
     vi.restoreAllMocks();
   });
 
-  it('matches meta+k on macOS via metaKey=true', () => {
-    restorePlatform = stubPlatform('MacIntel', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)');
-    const parsed = parseKeys('meta+k');
+  it('matches meta+k on macOS via metaKey=true', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('meta+k');
     const e = new KeyboardEvent('keydown', { key: 'k', metaKey: true });
-    expect(matchKey(parsed, e)).toBe(true);
+    expect(mod.matchKey(parsed, e)).toBe(true);
   });
 
-  it('matches meta+k on Windows via ctrlKey=true', () => {
-    restorePlatform = stubPlatform('Win32', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
-    const parsed = parseKeys('meta+k');
+  it('matches meta+k on Windows via ctrlKey=true', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'Win32',
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('meta+k');
     const e = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
-    expect(matchKey(parsed, e)).toBe(true);
+    expect(mod.matchKey(parsed, e)).toBe(true);
   });
 
-  it('does not match meta+k on macOS when only ctrlKey is set', () => {
-    restorePlatform = stubPlatform('MacIntel', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)');
-    const parsed = parseKeys('meta+k');
+  it('does not match meta+k on macOS when only ctrlKey is set', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('meta+k');
     const e = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true });
-    expect(matchKey(parsed, e)).toBe(false);
+    expect(mod.matchKey(parsed, e)).toBe(false);
   });
 
-  it("matches '?' when shiftKey is true (matcher inspects e.key directly)", () => {
-    const parsed = parseKeys('?');
+  it("matches '?' when shiftKey is true (matcher inspects e.key directly)", async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('?');
     const e = new KeyboardEvent('keydown', { key: '?', shiftKey: true });
-    expect(matchKey(parsed, e)).toBe(true);
+    expect(mod.matchKey(parsed, e)).toBe(true);
   });
 
-  it('rejects extra modifier: meta+k must not match metaKey+shiftKey event', () => {
-    restorePlatform = stubPlatform('MacIntel', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)');
-    const parsed = parseKeys('meta+k');
+  it('rejects extra modifier: meta+k must not match metaKey+shiftKey event', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('meta+k');
     const e = new KeyboardEvent('keydown', { key: 'k', metaKey: true, shiftKey: true });
-    expect(matchKey(parsed, e)).toBe(false);
+    expect(mod.matchKey(parsed, e)).toBe(false);
   });
 
-  it('matches escape with no modifiers', () => {
-    const parsed = parseKeys('escape');
+  it('matches escape with no modifiers', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('escape');
     const e = new KeyboardEvent('keydown', { key: 'Escape' });
-    expect(matchKey(parsed, e)).toBe(true);
+    expect(mod.matchKey(parsed, e)).toBe(true);
   });
 
-  it('matches meta+shift+k on macOS', () => {
-    restorePlatform = stubPlatform('MacIntel', 'Mozilla/5.0 (Macintosh; Intel Mac OS X)');
-    const parsed = parseKeys('meta+shift+k');
+  it('matches meta+shift+k on macOS', async () => {
+    const { mod, restore } = await loadWithPlatform(
+      'MacIntel',
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X)',
+    );
+    restorePlatform = restore;
+    const parsed = mod.parseKeys('meta+shift+k');
     const e = new KeyboardEvent('keydown', { key: 'K', metaKey: true, shiftKey: true });
-    expect(matchKey(parsed, e)).toBe(true);
+    expect(mod.matchKey(parsed, e)).toBe(true);
   });
 });
