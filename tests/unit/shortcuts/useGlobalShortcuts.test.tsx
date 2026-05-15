@@ -31,6 +31,7 @@ function makeHarness(overrides?: Partial<ShortcutContext>): Harness {
   return {
     ctx: {
       modalOpen: false,
+      topOverlayId: null,
       inputFocused: false,
       chatFocused: false,
       sessionActive: false,

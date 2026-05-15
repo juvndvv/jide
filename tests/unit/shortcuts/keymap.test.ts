@@ -7,6 +7,7 @@ const CONTEXTS: Array<{ name: string; ctx: ShortcutContext }> = [
     name: 'empty',
     ctx: {
       modalOpen: false,
+      topOverlayId: null,
       inputFocused: false,
       chatFocused: false,
       sessionActive: false,
@@ -17,6 +18,7 @@ const CONTEXTS: Array<{ name: string; ctx: ShortcutContext }> = [
     name: 'modal-open',
     ctx: {
       modalOpen: true,
+      topOverlayId: 'some-overlay',
       inputFocused: false,
       chatFocused: false,
       sessionActive: false,
@@ -27,6 +29,7 @@ const CONTEXTS: Array<{ name: string; ctx: ShortcutContext }> = [
     name: 'input-focused',
     ctx: {
       modalOpen: false,
+      topOverlayId: null,
       inputFocused: true,
       chatFocused: false,
       sessionActive: false,
@@ -37,6 +40,7 @@ const CONTEXTS: Array<{ name: string; ctx: ShortcutContext }> = [
     name: 'chat-focused-session-active',
     ctx: {
       modalOpen: false,
+      topOverlayId: null,
       inputFocused: false,
       chatFocused: true,
       sessionActive: true,

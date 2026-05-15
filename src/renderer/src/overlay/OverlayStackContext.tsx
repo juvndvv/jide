@@ -122,6 +122,19 @@ export function useIsTopOverlay(id: string): boolean {
   );
 }
 
+export function useTopOverlayId(): string | null {
+  const store = useStore();
+  return useSyncExternalStore(
+    store.subscribe,
+    () => {
+      const entries = store.getSnapshotEntries();
+      const top = entries[entries.length - 1];
+      return top ? top.id : null;
+    },
+    () => null,
+  );
+}
+
 export function useModalOpen(): boolean {
   const store = useStore();
   return useSyncExternalStore(

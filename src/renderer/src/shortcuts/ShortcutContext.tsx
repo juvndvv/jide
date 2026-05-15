@@ -12,6 +12,7 @@ import {
 
 export interface ShortcutContext {
   modalOpen: boolean;
+  topOverlayId: string | null;
   inputFocused: boolean;
   chatFocused: boolean;
   sessionActive: boolean;
@@ -36,6 +37,7 @@ export interface ShortcutDispatcher {
 
 const DEFAULT_CONTEXT: ShortcutContext = {
   modalOpen: false,
+  topOverlayId: null,
   inputFocused: false,
   chatFocused: false,
   sessionActive: false,
@@ -53,6 +55,7 @@ export const ShortcutDispatcherContext = createContext<ShortcutDispatcher>(noopD
 
 interface SettersBag {
   setModalOpen: (v: boolean) => void;
+  setTopOverlayId: (v: string | null) => void;
   setChatFocused: (v: boolean) => void;
   setSessionActive: (v: boolean) => void;
   setSessionCapReached: (v: boolean) => void;
@@ -70,6 +73,7 @@ function isFocusableEditable(target: EventTarget | null): boolean {
 
 export function ShortcutContextProvider({ children }: { children: ReactNode }): JSX.Element {
   const [modalOpen, setModalOpenState] = useState(false);
+  const [topOverlayId, setTopOverlayIdState] = useState<string | null>(null);
   const [chatFocused, setChatFocusedState] = useState(false);
   const [sessionActive, setSessionActiveState] = useState(false);
   const [sessionCapReached, setSessionCapReachedState] = useState(false);
@@ -91,8 +95,15 @@ export function ShortcutContextProvider({ children }: { children: ReactNode }): 
   }, []);
 
   const ctxValue = useMemo<ShortcutContext>(
-    () => ({ modalOpen, inputFocused, chatFocused, sessionActive, sessionCapReached }),
-    [modalOpen, inputFocused, chatFocused, sessionActive, sessionCapReached],
+    () => ({
+      modalOpen,
+      topOverlayId,
+      inputFocused,
+      chatFocused,
+      sessionActive,
+      sessionCapReached,
+    }),
+    [modalOpen, topOverlayId, inputFocused, chatFocused, sessionActive, sessionCapReached],
   );
 
   const handlersRef = useRef<Map<ShortcutId, Array<() => void>>>(new Map());
@@ -122,13 +133,20 @@ export function ShortcutContextProvider({ children }: { children: ReactNode }): 
   }, []);
 
   const setModalOpen = useCallback((v: boolean) => setModalOpenState(v), []);
+  const setTopOverlayId = useCallback((v: string | null) => setTopOverlayIdState(v), []);
   const setChatFocused = useCallback((v: boolean) => setChatFocusedState(v), []);
   const setSessionActive = useCallback((v: boolean) => setSessionActiveState(v), []);
   const setSessionCapReached = useCallback((v: boolean) => setSessionCapReachedState(v), []);
 
   const setters = useMemo<SettersBag>(
-    () => ({ setModalOpen, setChatFocused, setSessionActive, setSessionCapReached }),
-    [setModalOpen, setChatFocused, setSessionActive, setSessionCapReached],
+    () => ({
+      setModalOpen,
+      setTopOverlayId,
+      setChatFocused,
+      setSessionActive,
+      setSessionCapReached,
+    }),
+    [setModalOpen, setTopOverlayId, setChatFocused, setSessionActive, setSessionCapReached],
   );
 
   return (
@@ -172,4 +190,8 @@ export function useSetSessionCapReached(): (v: boolean) => void {
 
 export function useSetModalOpen(): (v: boolean) => void {
   return useSetters().setModalOpen;
+}
+
+export function useSetTopOverlayId(): (v: string | null) => void {
+  return useSetters().setTopOverlayId;
 }

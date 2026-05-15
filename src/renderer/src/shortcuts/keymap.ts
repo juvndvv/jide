@@ -49,7 +49,7 @@ export const keymap: KeyBinding[] = [
   {
     id: 'tweaks.toggle',
     keys: 'meta+,',
-    when: NOT_MODAL,
+    when: (ctx) => !ctx.modalOpen || ctx.topOverlayId === 'tweaks-panel',
     paletteLabel: 'Tweaks (theme, density, accent)',
     paletteGroup: 'layout',
     helpGroup: 'Layout',
