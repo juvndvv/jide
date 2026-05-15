@@ -77,6 +77,10 @@ const api: JideApi = {
         worktreeId,
         pathFromTool,
       }) as Promise<{ relPath: string } | null>,
+    search: (worktreeId, query, limit) =>
+      ipcRenderer.invoke('files:search', { worktreeId, query, limit }) as Promise<
+        { relPath: string; name: string }[]
+      >,
   },
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void): (() => void) => {
     if (!(EVENTS as readonly string[]).includes(event)) {

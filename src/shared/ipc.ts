@@ -30,6 +30,7 @@ export const CHANNELS = [
   'files:tree',
   'files:read',
   'files:open-in-viewer',
+  'files:search',
 ] as const;
 export type Channel = (typeof CHANNELS)[number];
 
@@ -86,6 +87,10 @@ export type ChannelMap = {
   'files:open-in-viewer': {
     req: { worktreeId: string; pathFromTool: string };
     res: { relPath: string } | null;
+  };
+  'files:search': {
+    req: { worktreeId: string; query: string; limit: number };
+    res: { relPath: string; name: string }[];
   };
 };
 
@@ -170,6 +175,11 @@ export interface JideApi {
       worktreeId: string,
       pathFromTool: string,
     ) => Promise<{ relPath: string } | null>;
+    search: (
+      worktreeId: string,
+      query: string,
+      limit: number,
+    ) => Promise<{ relPath: string; name: string }[]>;
   };
   on: <E extends Event>(event: E, handler: (payload: EventPayload<E>) => void) => () => void;
 }

@@ -55,6 +55,7 @@ describe('shared/ipc — runtime', () => {
         'files:tree',
         'files:read',
         'files:open-in-viewer',
+        'files:search',
       ].sort(),
     );
   });
