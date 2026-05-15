@@ -25,7 +25,7 @@ export function Sidebar({
   tweaksOpen: boolean;
   onToggleTweaks: () => void;
 }) {
-  const { theme, accent, density, sidebarSide } = useTheme();
+  const { theme, density, sidebarSide } = useTheme();
   const borderSide = sidebarSide === 'left' ? 'borderRight' : 'borderLeft';
   const settingsRef = useRef<HTMLButtonElement>(null);
 
@@ -43,26 +43,7 @@ export function Sidebar({
         fontSize: 13,
       }}
     >
-      <div
-        style={{
-          padding: `12px ${density.gap * 2}px 10px`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: '"Bowlby One SC", Anton, Impact, sans-serif',
-            fontSize: 22,
-            color: accent.value,
-            letterSpacing: -0.5,
-          }}
-        >
-          jide
-        </span>
-      </div>
-      <div style={{ flex: 1, overflow: 'auto', padding: `4px ${density.gap}px 12px` }}>
+      <div style={{ flex: 1, overflow: 'auto', padding: `12px ${density.gap}px` }}>
         <SidebarSection label="Proyectos">
           {projects.map((p) => (
             <ProjectBranch
